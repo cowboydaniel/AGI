@@ -12,13 +12,17 @@ This project is explicitly attempting a **raised-from-infancy** approach:
 - No external datasets for knowledge injection
 - Learning occurs through **raw sensory experience**, **self-supervised prediction**, and **caregiver interaction**
 
-A human infant is not a blank slate. It arrives with strong biological structure that enables learning to happen at all. This genome provides the minimal equivalent structure required for a software infant to develop through the full arc of cognitive development.
+A human infant is not a blank slate. It arrives with strong biological structure that enables learning to happen at all. This genome provides the minimal equivalent structure required for a software infant to develop through the full arc of cognitive development — from primitive reflex to functionally adult-level human cognition.
+
+Biology is the template for architecture and growth dynamics, not substrate. This genome does not simulate neurons or synapses. It replicates the functional role of biology's genome: providing the structural priors and learning rules that make development possible.
+
+The developmental trajectory targets **adult-level human cognitive function** as its endpoint. The genome must therefore be sufficient to support not just early symbol grounding, but the full arc of growth through to integrated, bounded, adult-level cognition.
 
 The genome must be:
 - Stable over time
 - Not self-modifiable by the agent
 - Simple enough to audit
-- Powerful enough to support open-ended learning
+- Powerful enough to support open-ended learning through to adult-level cognitive integration
 
 ---
 
@@ -341,6 +345,11 @@ The genome is correct if it enables:
 - imitation learning of speech-like outputs from acoustic targets
 - continuous background processing with sleep-like consolidation
 - scalable development toward mature integrated cognition
+- stable multi-modal world modeling as experience accumulates
+- persistent autobiographical identity across long timescales
+- bounded social reasoning and theory of mind
+- compositional grammar and language within human-scale limits
+- long-horizon planning within human working memory constraints
 
 The genome is incorrect if:
 - learning stalls without external datasets
@@ -348,6 +357,7 @@ The genome is incorrect if:
 - it cannot bind words to referents even with joint attention
 - it becomes unstable or collapses into repetitive loops
 - it can subvert sandbox physics or rewrite its own axioms
+- development plateaus before reaching adult-level cognitive integration
 
 ---
 

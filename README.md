@@ -35,9 +35,32 @@ The goal is to recreate the developmental process by which cognition forms, not 
 
 ---
 
+## Ultimate Target
+
+This architecture is explicitly modeled after human neurodevelopment.
+
+The end goal is not a narrow specialist system, nor a superintelligent optimizer, but a digital cognitive architecture that **functionally approximates an adult human brain** in structure and behavior.
+
+This means:
+
+- Layered regulatory foundations (brainstem-like control before higher cognition)
+- Modular specialization (perception, memory, value, planning)
+- Persistent identity across development
+- Continuous predictive processing
+- Drive-based regulation
+- Sleep-like consolidation
+- Socially shaped language acquisition
+- Bounded, human-like cognitive limits
+
+The intention is to replicate the developmental trajectory from infant to adult cognition, not to simulate biological tissue. Biology is the template for architecture and growth dynamics, not substrate.
+
+The final objective is a functionally adult-level human cognitive system implemented in software, developed through staged growth rather than pretraining.
+
+---
+
 ## Core Objective
 
-The objective is to grow a digital cognitive agent from infancy through developmental stages.
+The objective is to grow a digital cognitive agent from infancy through developmental stages, toward adult-level human cognitive function.
 
 The first milestone of success is:
 
@@ -51,7 +74,7 @@ This must occur through:
 - Reinforcement and feedback
 - Sleep-like replay and consolidation
 
-If that occurs, the system has demonstrated grounded symbol formation from experience.
+If that occurs, the system has demonstrated grounded symbol formation from experience — the foundation on which all further cognitive development builds.
 
 ---
 
@@ -85,19 +108,17 @@ It must learn language socially, through caregiver interaction, from raw audio.
 
 ## Long-Term Vision
 
-If development succeeds beyond early language grounding, the system may gradually:
+Development proceeds from early language grounding toward full adult-level cognitive integration:
 
-- Form object permanence
-- Develop richer vocabulary
-- Learn grammar through compression
-- Build abstract concepts
-- Develop planning and self-modeling
+- Object permanence and stable world models
+- Richer vocabulary and compositional grammar
+- Grammar emerging through compression and prediction
+- Abstract concept formation
+- Long-horizon planning and self-modeling
+- Stable autobiographical identity
+- Bounded social reasoning
 
-This is not guaranteed.
-
-The project is exploratory and developmental.
-
-The immediate measurable success criterion is grounded word acquisition from raw sensory experience.
+This is the developmental arc the system is built to traverse. Individual milestones may take significant time and iteration, but the direction is explicit: infant to adult cognition, staged through stable prerequisites.
 
 ---
 
@@ -113,4 +134,4 @@ However, containment, capability control, and prevention of harmful emergent beh
 
 ## In One Sentence
 
-We are building a sandboxed digital infant that learns from raw perception and caregiver interaction, in order to grow cognition developmentally rather than preload it.
+We are building a sandboxed digital mind that begins as an infant — learning from raw perception and caregiver interaction — and grows through staged development toward functionally adult-level human cognition, using biology as the template for architecture and growth dynamics, not substrate.
