@@ -2,21 +2,9 @@
 
 ## Purpose
 
-This document defines the system's **immutable "genome"**: the built-in priors, drives, learning rules, developmental schedule, and sandbox physics that exist **at birth**.
+This document defines the system's **immutable genome**: the built-in priors, drives, learning rules, developmental schedule, and sandbox physics that exist at birth. For project context, see [README.md](README.md).
 
-This project is explicitly attempting a **raised-from-infancy** approach:
-
-- No preloaded vocabulary
-- No preloaded "facts"
-- No internet
-- No external datasets for knowledge injection
-- Learning occurs through **raw sensory experience**, **self-supervised prediction**, and **caregiver interaction**
-
-A human infant is not a blank slate. It arrives with strong biological structure that enables learning to happen at all. This genome provides the minimal equivalent structure required for a software infant to develop through the full arc of cognitive development — from primitive reflex to functionally adult-level human cognition.
-
-Biology is the template for architecture and growth dynamics, not substrate. This genome does not simulate neurons or synapses. It replicates the functional role of biology's genome: providing the structural priors and learning rules that make development possible.
-
-The developmental trajectory targets **adult-level human cognitive function** as its endpoint. The genome must therefore be sufficient to support not just early symbol grounding, but the full arc of growth through to integrated, bounded, adult-level cognition.
+The genome replicates the functional role of biology's genome: providing the structural priors and learning rules that make development possible. It does not simulate neurons or synapses.
 
 The genome must be:
 - Stable over time
@@ -361,12 +349,24 @@ The genome is incorrect if:
 
 ---
 
+## Genome Versioning
+
+This genome is **v1** — a starting hypothesis based on the project's best understanding of what minimal innate structure is needed to support open-ended cognitive development.
+
+The immutability constraint is about the **running agent**: a developing system cannot modify its own genome. This is non-negotiable. It is the equivalent of an organism being unable to rewrite its own DNA.
+
+However, the **project** can revise the genome between developmental runs based on empirical results. If development stalls at a particular stage and the stall is attributable to missing innate structure (rather than insufficient experience or a bug), the genome should be revised, versioned, and the run restarted or branched.
+
+Genome revisions must be:
+- Documented with rationale
+- Versioned (v1, v2, etc.)
+- Applied only between runs, never mid-development
+- Evaluated against the success/failure criteria above
+
+This is standard scientific methodology: form a hypothesis, test it, revise if needed.
+
+---
+
 ## Notes
 
-This genome intentionally prioritizes:
-- developmental realism
-- safety via physics-like sandbox constraints
-- learnability through inductive biases, not preloaded knowledge
-- caregiver-driven grounding and social shaping
-
-Everything else in the project grows from this foundation.
+This genome prioritizes developmental realism, safety via physics-like sandbox constraints, learnability through inductive biases, and caregiver-driven social shaping. Everything else in the project grows from this foundation.

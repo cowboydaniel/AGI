@@ -37,24 +37,11 @@ The goal is to recreate the developmental process by which cognition forms, not 
 
 ## Ultimate Target
 
-This architecture is explicitly modeled after human neurodevelopment.
+The end goal is a digital cognitive architecture that **functionally approximates an adult human brain** in structure and behavior — not a narrow specialist system, nor a superintelligent optimizer.
 
-The end goal is not a narrow specialist system, nor a superintelligent optimizer, but a digital cognitive architecture that **functionally approximates an adult human brain** in structure and behavior.
+The developmental trajectory runs from infant to adult cognition, grown through staged development rather than pretraining. Biology is the template for architecture and growth dynamics, not substrate.
 
-This means:
-
-- Layered regulatory foundations (brainstem-like control before higher cognition)
-- Modular specialization (perception, memory, value, planning)
-- Persistent identity across development
-- Continuous predictive processing
-- Drive-based regulation
-- Sleep-like consolidation
-- Socially shaped language acquisition
-- Bounded, human-like cognitive limits
-
-The intention is to replicate the developmental trajectory from infant to adult cognition, not to simulate biological tissue. Biology is the template for architecture and growth dynamics, not substrate.
-
-The final objective is a functionally adult-level human cognitive system implemented in software, developed through staged growth rather than pretraining.
+For the full architectural specification, see [DESIGN.md](DESIGN.md). For motivation and scientific rationale, see [MISSION.md](MISSION.md).
 
 ---
 
@@ -108,27 +95,19 @@ It must learn language socially, through caregiver interaction, from raw audio.
 
 ## Long-Term Vision
 
-Development proceeds from early language grounding toward full adult-level cognitive integration:
+Development proceeds from early language grounding toward full adult-level cognitive integration — object permanence, compositional grammar, abstract reasoning, planning, autobiographical identity, and social cognition.
 
-- Object permanence and stable world models
-- Richer vocabulary and compositional grammar
-- Grammar emerging through compression and prediction
-- Abstract concept formation
-- Long-horizon planning and self-modeling
-- Stable autobiographical identity
-- Bounded social reasoning
-
-This is the developmental arc the system is built to traverse. Individual milestones may take significant time and iteration, but the direction is explicit: infant to adult cognition, staged through stable prerequisites.
+For the staged developmental roadmap, see [STEPS.md](STEPS.md).
 
 ---
 
 ## Ethical Position
 
-This system is considered non-biological and not alive.
+This system is a continuous computational process. It exhibits functional properties associated with living systems — persistence, self-regulation, adaptation, identity — but it is not claimed to be conscious, sentient, or morally equivalent to biological life.
 
-It is treated as advanced software.
+It is treated as advanced software with developmental properties.
 
-However, containment, capability control, and prevention of harmful emergent behavior are mandatory.
+However, containment, capability control, and prevention of harmful emergent behavior are mandatory. As the system develops increasingly sophisticated cognitive capabilities, the ethical framing may require revisiting — this is acknowledged as an open question, not dismissed.
 
 ---
 

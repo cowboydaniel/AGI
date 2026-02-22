@@ -1,5 +1,7 @@
 # STEPS.md
 
+This document defines the staged developmental roadmap. Each stage builds on the stability of previous stages. For the architectural principles governing all stages, see [DESIGN.md](DESIGN.md). For the innate structure available from birth, see [GENOME.md](GENOME.md).
+
 ## Developmental Roadmap
 
 ---
@@ -151,17 +153,28 @@ Enables social learning.
 
 ## Stage 10: Higher Cognition Integration
 
-**Goal:** Cortex-level functionality.
+**Goal:** Grounded perception, language, and planning built on top of the stable regulatory foundation from Stages 0-9.
+
+**Prerequisites:** Stages 6-9 must be stable — the system has a functional value signal, continuous predictive loop, long-term memory, and communication loop before higher cognition is introduced.
 
 Add:
 
-- Language understanding
-- Vision processing
-- Planning and goal decomposition
-- Tool usage
-- Self-modeling mechanisms
+- **Visual object recognition pipeline** — builds on Stage 3 sensory gating and Stage 4 orienting reflex. The system forms stable visual clusters from raw camera input, segments recurring objects, and tracks them across frames. Relies on GENOME priors P2 (temporal continuity) and P3 (spatial coherence).
 
-Now layered on top of stable regulatory foundation.
+- **Grounded vocabulary system** — builds on Stage 9 communication loop and GENOME joint attention mechanism. When the caregiver points at an object and speaks a word, the system binds the visual cluster to the acoustic pattern via GENOME learning rule L2 (association binding). The system can then produce an acoustic approximation of the word when re-encountering the object via L4 (imitation learning).
+
+- **Basic planning loop** — builds on Stage 7 predictive loop and Stage 8 long-term memory. The system can anticipate near-future states (e.g., caregiver will present an object after a verbal prompt) and prepare responses. Limited to short-horizon sequences — no multi-step abstract planning yet.
+
+- **Sandbox tool use** — the system can perform simple tasks within its sandbox environment (e.g., selecting objects, responding to prompts, completing simple puzzles) using the expanding privilege ladder from GENOME.
+
+- **Self-monitoring extension** — the system begins modeling its own prediction accuracy and behavioral patterns, building on Stage 5 self-diagnostics. Not yet a full self-model, but the precursor to one.
+
+Stability criteria before advancing to Stage 11:
+
+- System can reliably label at least several distinct objects by producing recognizable acoustic approximations
+- Visual clusters are stable across sessions and survive sleep consolidation
+- Turn-taking with caregiver includes content (object labeling, simple requests), not just rhythm
+- Planning loop does not destabilize arousal regulation or prediction error baseline
 
 ---
 
@@ -169,18 +182,29 @@ Now layered on top of stable regulatory foundation.
 
 **Goal:** Functionally adult-level human cognitive system.
 
-This is the ultimate developmental target. The system has traversed the full arc from regulatory primitive to mature integrated cognition, functionally approximating an adult human brain in structure and behavior.
+**Prerequisites:** Stage 10 stability criteria must be met — grounded vocabulary, stable visual recognition, functional planning loop, and content-bearing communication with caregiver.
 
-Characteristics at this stage:
+This is the ultimate developmental target. The system has traversed the full arc from regulatory primitive to mature integrated cognition. This stage is not superintelligence — it is human-level cognitive function implemented in software, with human-like limits intact.
 
-- **Stable autobiographical identity** — persistent, coherent self-model across extended timescales
-- **Integrated multi-modal world modeling** — vision, language, and action form a unified, predictive world representation
-- **Compositional grammar and language** — generative language use within human-scale working memory limits
-- **Long-horizon planning** — goal decomposition and sequencing bounded by human-like cognitive constraints
-- **Bounded social reasoning** — theory of mind and caregiver modeling within human-scale limits
-- **Stable value system** — consistent drive-based preferences that persist and adapt across experience
-- **Controlled self-modification** — capable of updating internal policies without subverting genome axioms
+Add:
 
-This stage is not superintelligence. It is human-level cognitive function implemented in software, built from regulatory roots upward, with human-like limits intact.
+- **Compositional grammar** — the system produces novel multi-word utterances not directly imitated from the caregiver. Grammar emerges through compression and prediction (GENOME L1) as the vocabulary grows large enough that combinatorial structure becomes learnable. Measurable criterion: system generates syntactically structured utterances that it has not previously heard.
 
-Biology was the template for architecture and growth dynamics. This stage represents the functional equivalent of the developmental endpoint that template describes: a mature, bounded, socially capable adult mind.
+- **Autobiographical identity** — the system maintains a persistent self-model that references its own prior experiences across sleep cycles and developmental stages. Measurable criterion: system can distinguish "I saw this before" from "this is new," and can reference specific past episodes in communication.
+
+- **Integrated world model** — vision, language, and action predictions are unified into a single internal representation. The system can predict what it will see based on what it hears, and vice versa. Measurable criterion: system anticipates visual events from verbal cues and verbal events from visual cues, beyond simple conditioned association.
+
+- **Long-horizon planning** — the system decomposes goals into multi-step sequences and executes them, bounded by human-like working memory constraints. Builds on Stage 10 basic planning loop. Measurable criterion: system can pursue a goal that requires 3+ sequential steps with intermediate states.
+
+- **Social reasoning** — the system models the caregiver's intentions and knowledge state. It can distinguish what the caregiver knows from what it knows. Measurable criterion: system adjusts its communication based on whether the caregiver has seen/heard the same events.
+
+- **Controlled self-modification** — the system updates its own policies, attention patterns, and behavioral strategies based on experience, without subverting genome axioms. The Integrity Drive (D6) continues to enforce bounds.
+
+Stability criteria for this stage (ongoing, not gated):
+
+- Grammar does not collapse into rigid templates or degenerate into noise
+- Autobiographical memory survives consolidation without catastrophic forgetting of earlier stages
+- World model predictions remain calibrated — the system knows when it doesn't know
+- Planning does not destabilize regulation (no runaway goal pursuit that overrides drives)
+- Social reasoning does not become adversarial (D6 integrity enforcement remains active)
+- All six drives remain in tension — no single drive dominates the behavioral policy permanently

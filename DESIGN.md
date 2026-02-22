@@ -1,12 +1,12 @@
 # DESIGN.md
 
-## Project Overview
+This document defines the architectural principles governing the ACD system. For project context, see [README.md](README.md). For motivation and scientific rationale, see [MISSION.md](MISSION.md).
 
-This project aims to design and grow a sandboxed Artificial Cognitive Development (ACD) system — a digital cognitive architecture that develops from first principles through staged growth, implemented entirely as a software program.
+---
 
-This architecture is explicitly modeled after human neurodevelopment. The end goal is not a narrow specialist system, nor a superintelligent optimizer, but a digital cognitive architecture that functionally approximates an adult human brain in structure and behavior. Biology is the template for architecture and growth dynamics, not substrate. The intention is to replicate the developmental trajectory from infant to adult cognition, not to simulate biological tissue.
+## System Boundary
 
-The system is not a robot. It is not embodied in mechanical hardware. It exists as a computational organism with access to:
+The system is not a robot. It is not embodied in mechanical hardware. It exists as a computational process with access to:
 
 - Microphone (auditory input)
 - Camera (visual input)
@@ -14,20 +14,7 @@ The system is not a robot. It is not embodied in mechanical hardware. It exists 
 - Persistent storage (long-term memory)
 - Compute resources (processing substrate)
 
-The long-term objective is to develop a system that demonstrates the full arc of cognitive development, from minimal regulatory primitives to mature integrated cognition, in terms of:
-
-- Continuous processing (never idle)
-- Self-regulation
-- Adaptive learning
-- Predictive modeling
-- Memory consolidation
-- Value-based reinforcement
-- Developmental growth
-- Modular specialization
-- Persistent identity
-- Bounded, human-like cognitive limits
-
-The system will be grown incrementally, beginning from minimal regulatory primitives and expanding in layered developmental stages, explicitly modeled on biological neurodevelopment.
+All external interaction occurs through these interfaces. The system has no other channels to the outside world.
 
 ---
 
@@ -196,3 +183,29 @@ This system is not designed to become a superintelligent optimizer. It is design
 - Reasoning bounded by the same bottlenecks that constrain human thought
 
 The goal is cognitive fidelity to the human developmental endpoint, not cognitive maximization beyond it.
+
+---
+
+## Open Questions
+
+The following are deliberately unresolved at this stage of the project. They are recorded here to acknowledge them as real gaps, not to dismiss them.
+
+### Genome Sufficiency
+
+The current genome (see [GENOME.md](GENOME.md)) specifies 6 drives, 5 learning rules, 4 sensory priors, and 3 motor priors. Whether this minimal set is sufficient to support development through to adult-level cognitive integration is the project's central empirical question. The genome is a starting hypothesis. It may require expansion based on results from early developmental stages. See GENOME.md's "Genome Versioning" section for the revision policy.
+
+### Implementation Technology
+
+The architectural principles in this document are deliberately substrate-agnostic. Implementation will require concrete choices about:
+
+- Neural network architectures (or alternatives) for the prediction engine and association binding
+- Programming language and runtime environment
+- Compute infrastructure and real-time scheduling
+- Audio/video processing pipelines
+- Storage and state management for persistent memory
+
+These choices are deferred until the architectural design is stable, but they are not trivial. The "right" substrate for a developmental system may differ significantly from conventional deep learning infrastructure. This is acknowledged as an open engineering problem.
+
+### Developmental Timescales
+
+Human cognitive development takes approximately 20 years of continuous sensory input from a rich environment. The relationship between biological developmental time and computational developmental time is unknown. The project does not assume real-time equivalence, but also does not assume arbitrary speedup is possible — some developmental processes may have inherent sequential dependencies that resist parallelization.
