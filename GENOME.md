@@ -12,7 +12,7 @@ This project is explicitly attempting a **raised-from-infancy** approach:
 - No external datasets for knowledge injection
 - Learning occurs through **raw sensory experience**, **self-supervised prediction**, and **caregiver interaction**
 
-A human infant is not a blank slate. It arrives with strong biological structure that enables learning to happen at all. This genome provides the minimal equivalent structure required for a software infant to develop into an adult-level digital mind.
+A human infant is not a blank slate. It arrives with strong biological structure that enables learning to happen at all. This genome provides the minimal equivalent structure required for a software infant to develop through the full arc of cognitive development.
 
 The genome must be:
 - Stable over time
@@ -340,7 +340,7 @@ The genome is correct if it enables:
 - emergence of grounded vocabulary through caregiver interaction
 - imitation learning of speech-like outputs from acoustic targets
 - continuous background processing with sleep-like consolidation
-- scalable development toward adult-level integrated cognition
+- scalable development toward mature integrated cognition
 
 The genome is incorrect if:
 - learning stalls without external datasets

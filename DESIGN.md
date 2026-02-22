@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This project aims to design and grow a fully digital system that functionally replicates a human brain, implemented entirely as a software program.
+This project aims to design and grow a sandboxed Artificial Cognitive Development (ACD) system — a digital cognitive architecture that develops from first principles through staged growth, implemented entirely as a software program.
 
 The system is not a robot. It is not embodied in mechanical hardware. It exists as a computational organism with access to:
 
@@ -12,7 +12,7 @@ The system is not a robot. It is not embodied in mechanical hardware. It exists 
 - Persistent storage (long-term memory)
 - Compute resources (processing substrate)
 
-The long-term objective is to develop a system that reaches functional equivalence to an adult human brain in terms of:
+The long-term objective is to develop a system that demonstrates the full arc of cognitive development, from minimal regulatory primitives to mature integrated cognition, in terms of:
 
 - Continuous processing (never idle)
 - Self-regulation
@@ -161,9 +161,9 @@ The root of intelligence is regulation, not knowledge.
 
 ---
 
-### 10. Adult-Level Target
+### 10. Developmental Maturity Target
 
-An "adult brain equivalent" system will demonstrate:
+A developmentally mature ACD system will demonstrate:
 
 - Continuous predictive modeling
 - Adaptive behavior across contexts
@@ -174,4 +174,4 @@ An "adult brain equivalent" system will demonstrate:
 - Robust multi-modal perception
 - Controlled self-modification
 
-This is the end-state objective.
+This is the long-term developmental target. It is exploratory, not guaranteed.
