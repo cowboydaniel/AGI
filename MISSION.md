@@ -1,47 +1,51 @@
 # MISSION.md
 
-## Mission Statement
+## Why Developmental?
 
-The mission of this project is to develop an Artificial Cognitive Development (ACD) system — a sandboxed digital cognitive architecture that grows from infancy through staged developmental milestones, explicitly modeled after human neurodevelopment.
+Most AI systems are trained: exposed to curated datasets, optimized against loss functions, and deployed as finished products. They acquire capability without traversing the process that produces it.
 
-The end goal is not a narrow specialist system, nor a superintelligent optimizer. The end goal is a digital cognitive architecture that functionally approximates an adult human brain in structure and behavior. Biology is the template for architecture and growth dynamics, not substrate. The system does not simulate biological tissue; it replicates the functional trajectory of biological development in software.
+This project takes a different approach. It asks: **what happens if you build a system that must develop its cognitive capabilities from scratch, through staged growth, the way biological minds do?**
 
-This system is not intended to be a static model or narrow task solver. It is intended to:
+The scientific question is whether the developmental trajectory itself — the sequence of regulatory stability, then prediction, then value, then memory, then communication, then higher cognition — is a necessary foundation for robust, grounded, human-like intelligence, or merely an evolutionary accident that can be bypassed.
 
-- Exist continuously
-- Regulate itself
-- Adapt over time
-- Learn from interaction
-- Maintain persistent identity
-- Operate across modalities
-- Modify its own internal structure
-- Improve without explicit retraining cycles
+This project bets on the former.
 
-The objective is to build a digital cognitive system that replicates the *process* of cognitive development, demonstrating:
+---
 
-- Continuous activity
-- Predictive modeling
-- Sleep-like consolidation
-- Reinforcement-driven learning
-- Developmental growth
-- Modular specialization
-- Long-term adaptation
+## What Distinguishes This From Conventional AI
+
+| Conventional AI | This Project |
+|----------------|-------------|
+| Pretrained on curated datasets | Learns from raw sensory experience |
+| Knowledge injected at training time | Knowledge develops through interaction |
+| Static after deployment | Continuously developing |
+| Competence without comprehension | Comprehension through grounded development |
+| No developmental trajectory | Explicit staged growth from regulatory primitives |
+| Unbounded optimization target | Bounded, human-like cognitive limits |
+
+The core hypothesis is that **grounded symbol formation** — binding words to perceived reality through social interaction — requires developmental process, not dataset scale. A system that learns "apple" by seeing apples and hearing a caregiver say "apple" has a fundamentally different relationship to that concept than a system trained on text containing the word "apple."
+
+---
+
+## Success Vision
+
+A successful ACD system will:
+
+- Operate as a continuous process with persistent internal state
+- Maintain coherent identity across developmental stages and sleep cycles
+- Respond adaptively to its environment and caregiver
+- Develop from primitive reflex to adult-level cognitive capability
+- Operate within bounded, human-like cognitive limits
+- Demonstrate grounded vocabulary, compositional language, and social reasoning
+
+These are not features to be implemented. They are properties that must **emerge** from the developmental process itself. If they have to be hand-coded, the approach has failed.
+
+---
+
+## Scientific Framing
 
 This work is directed toward the scientific study of Artificial Cognitive Development (ACD) using iterative, developmentally-staged implementation.
 
-The end goal is a system that:
+The system grows from regulatory roots upward, mirroring biological neurodevelopment rather than bypassing it. Each developmental stage must be stable before the next is introduced.
 
-- Lives as a process
-- Maintains internal continuity
-- Feels coherent over time
-- Responds adaptively to environment
-- Develops from primitive reflex to functionally adult-level human cognitive capability
-- Operates within bounded, human-like cognitive limits
-- Demonstrates persistent autobiographical identity
-- Achieves stable social reasoning, compositional language, and long-horizon planning
-
-This is a developmental ACD approach, not a single-model training approach.
-
-The system will grow from regulatory roots upward, mirroring biological neurodevelopment rather than bypassing it.
-
-The ultimate aim is to construct a digital cognitive system that is structurally stable, continuously learning, and functionally equivalent to an adult human mind — implemented in software, grown through staged development, bounded by human-scale cognitive constraints.
+For the system's architectural principles, see [DESIGN.md](DESIGN.md). For the immutable innate structure, see [GENOME.md](GENOME.md). For the staged developmental roadmap, see [STEPS.md](STEPS.md).
