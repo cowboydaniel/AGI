@@ -4,6 +4,8 @@
 
 This project aims to design and grow a sandboxed Artificial Cognitive Development (ACD) system — a digital cognitive architecture that develops from first principles through staged growth, implemented entirely as a software program.
 
+This architecture is explicitly modeled after human neurodevelopment. The end goal is not a narrow specialist system, nor a superintelligent optimizer, but a digital cognitive architecture that functionally approximates an adult human brain in structure and behavior. Biology is the template for architecture and growth dynamics, not substrate. The intention is to replicate the developmental trajectory from infant to adult cognition, not to simulate biological tissue.
+
 The system is not a robot. It is not embodied in mechanical hardware. It exists as a computational organism with access to:
 
 - Microphone (auditory input)
@@ -23,8 +25,9 @@ The long-term objective is to develop a system that demonstrates the full arc of
 - Developmental growth
 - Modular specialization
 - Persistent identity
+- Bounded, human-like cognitive limits
 
-The system will be grown incrementally, beginning from minimal regulatory primitives and expanding in layered developmental stages, analogous to biological neurodevelopment.
+The system will be grown incrementally, beginning from minimal regulatory primitives and expanding in layered developmental stages, explicitly modeled on biological neurodevelopment.
 
 ---
 
@@ -163,15 +166,33 @@ The root of intelligence is regulation, not knowledge.
 
 ### 10. Developmental Maturity Target
 
-A developmentally mature ACD system will demonstrate:
+A developmentally mature ACD system will demonstrate the functional properties of an adult human mind:
 
 - Continuous predictive modeling
 - Adaptive behavior across contexts
-- Persistent internal identity
+- Persistent autobiographical identity
 - Long-term memory integration
 - Self-calibration
 - Value-driven decision making
 - Robust multi-modal perception
-- Controlled self-modification
+- Controlled self-modification within genome bounds
+- Stable social reasoning and theory of mind
+- Compositional language and grammar within human-scale limits
+- Long-horizon planning within human working memory constraints
 
-This is the long-term developmental target. It is exploratory, not guaranteed.
+This is the explicit developmental target: functionally adult-level human cognition implemented in software.
+
+---
+
+### 11. Bounded Cognitive Scope
+
+The target is human-like capability with human-like limits.
+
+This system is not designed to become a superintelligent optimizer. It is designed to approximate the cognitive structure and behavior of an adult human mind:
+
+- Working memory bounded to human-scale context windows
+- Processing speed constrained by metabolic budgeting
+- Knowledge built from embodied experience, not encyclopedic ingestion
+- Reasoning bounded by the same bottlenecks that constrain human thought
+
+The goal is cognitive fidelity to the human developmental endpoint, not cognitive maximization beyond it.

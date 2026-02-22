@@ -162,3 +162,25 @@ Add:
 - Self-modeling mechanisms
 
 Now layered on top of stable regulatory foundation.
+
+---
+
+## Stage 11: Adult Cognitive Integration
+
+**Goal:** Functionally adult-level human cognitive system.
+
+This is the ultimate developmental target. The system has traversed the full arc from regulatory primitive to mature integrated cognition, functionally approximating an adult human brain in structure and behavior.
+
+Characteristics at this stage:
+
+- **Stable autobiographical identity** — persistent, coherent self-model across extended timescales
+- **Integrated multi-modal world modeling** — vision, language, and action form a unified, predictive world representation
+- **Compositional grammar and language** — generative language use within human-scale working memory limits
+- **Long-horizon planning** — goal decomposition and sequencing bounded by human-like cognitive constraints
+- **Bounded social reasoning** — theory of mind and caregiver modeling within human-scale limits
+- **Stable value system** — consistent drive-based preferences that persist and adapt across experience
+- **Controlled self-modification** — capable of updating internal policies without subverting genome axioms
+
+This stage is not superintelligence. It is human-level cognitive function implemented in software, built from regulatory roots upward, with human-like limits intact.
+
+Biology was the template for architecture and growth dynamics. This stage represents the functional equivalent of the developmental endpoint that template describes: a mature, bounded, socially capable adult mind.
