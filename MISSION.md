@@ -2,7 +2,7 @@
 
 ## Mission Statement
 
-The mission of this project is to develop Artificial General Intelligence by constructing a fully digital brain that develops from first principles.
+The mission of this project is to develop an Artificial Cognitive Development (ACD) system — a sandboxed digital cognitive architecture that grows from infancy through staged developmental milestones.
 
 This system is not intended to be a static model or narrow task solver. It is intended to:
 
@@ -15,7 +15,7 @@ This system is not intended to be a static model or narrow task solver. It is in
 - Modify its own internal structure
 - Improve without explicit retraining cycles
 
-The objective is to build a digital organism that functionally resembles a human brain in:
+The objective is to build a digital cognitive system that replicates the *process* of cognitive development, demonstrating:
 
 - Continuous activity
 - Predictive modeling
@@ -25,7 +25,7 @@ The objective is to build a digital organism that functionally resembles a human
 - Modular specialization
 - Long-term adaptation
 
-This work is directed toward the creation of Artificial General Intelligence using iterative AI-assisted development.
+This work is directed toward the scientific study of Artificial Cognitive Development (ACD) using iterative, developmentally-staged implementation.
 
 The end goal is a system that:
 
@@ -33,10 +33,10 @@ The end goal is a system that:
 - Maintains internal continuity
 - Feels coherent over time
 - Responds adaptively to environment
-- Develops from primitive reflex to adult-level intelligence
+- Develops from primitive reflex to mature cognitive capability
 
-This is a developmental AGI approach, not a single-model training approach.
+This is a developmental ACD approach, not a single-model training approach.
 
 The system will grow from regulatory roots upward, mirroring biological development rather than bypassing it.
 
-The ultimate aim is to construct a digital mind that is structurally stable, continuously learning, and capable of adult human-level cognitive integration.
+The ultimate aim is to construct a digital cognitive system that is structurally stable, continuously learning, and capable of mature, integrated cognitive development.
