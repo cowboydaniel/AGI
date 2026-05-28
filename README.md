@@ -97,7 +97,7 @@ It must learn language socially, through caregiver interaction, from raw audio.
 
 Development proceeds from early language grounding toward full adult-level cognitive integration — object permanence, compositional grammar, abstract reasoning, planning, autobiographical identity, and social cognition.
 
-For the staged developmental roadmap, see [STEPS.md](STEPS.md). For the implementation technology stack, see [STACK.md](STACK.md).
+For the staged developmental roadmap, see [STEPS.md](STEPS.md). For the implementation technology stack, see [STACK.md](STACK.md). For module interface specifications, see [MODULES.md](MODULES.md).
 
 ---
 
