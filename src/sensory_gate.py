@@ -154,8 +154,12 @@ async def _apply_gate(mode: ArousalMode) -> None:
 
 
 async def on_arousal_state(event: ArousalStateEvent) -> None:
-    if event.mode != _current_mode:
-        await _apply_gate(event.mode)
+    await _apply_gate(event.mode)
+
+
+async def apply_startup_gate() -> None:
+    """Apply gate for the startup arousal mode. Call from main after all modules subscribe."""
+    await _apply_gate(_current_mode)
 
 
 def init() -> None:
