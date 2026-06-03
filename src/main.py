@@ -12,6 +12,7 @@ from pathlib import Path
 import arousal
 import bus
 import clock
+import homeostasis
 import orienting
 import sandbox
 import sensory_gate
@@ -38,7 +39,7 @@ async def _log_ticks(event: clock.TickEvent) -> None:
 
 
 async def main() -> None:
-    logger.info("ACD Stage 4 — Orienting Reflex — booting")
+    logger.info("ACD Stage 5 — Homeostasis — booting")
 
     # 2. State Store (must come before sandbox reads from it)
     state_store.init()
@@ -59,6 +60,9 @@ async def main() -> None:
 
     # 6. Orienting Reflex
     orienting.init()
+
+    # Homeostasis (no fixed slot in init order — runs alongside everything)
+    homeostasis.init()
 
     # Persist stage on each boot so we can inspect it externally
     state_store.set("development_stage", stage)
