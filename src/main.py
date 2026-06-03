@@ -19,6 +19,7 @@ import predictor
 import sandbox
 import sensory_gate
 import state_store
+import value
 
 logging.basicConfig(
     level=logging.INFO,
@@ -41,7 +42,7 @@ async def _log_ticks(event: clock.TickEvent) -> None:
 
 
 async def main() -> None:
-    logger.info("ACD Stage 7 — Continuous Predictive Loop — booting")
+    logger.info("ACD — Stage 6 Value Signal + Stage 7 Continuous Predictive Loop — booting")
 
     # 2. State Store (must come before sandbox reads from it)
     state_store.init()
@@ -68,6 +69,10 @@ async def main() -> None:
 
     # 7. Continuous Predictive Loop
     predictor.init()
+
+    # 9. Reinforcement / Value Module (Stage 6: Value Signal) — initialised after
+    #    the predictor because it consumes prediction-error / learning-progress.
+    value.init()
 
     # 6. Sensor Input — mic
     mic_input.init()
@@ -100,6 +105,7 @@ async def main() -> None:
         except asyncio.CancelledError:
             pass
 
+    value.mark_clean_shutdown()
     state_store.close()
     logger.info("shutdown complete")
 
