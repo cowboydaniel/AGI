@@ -53,7 +53,7 @@ There is no source code yet. The current phase is documentation and architecture
 
 ## Development Branch
 
-Active development branch: `claude/keen-curie-KfL33`
+Active development branch: `claude/upbeat-mendel-Jojor`
 
 ---
 
