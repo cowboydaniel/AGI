@@ -9,6 +9,7 @@ import signal
 import sys
 from pathlib import Path
 
+import arousal
 import bus
 import clock
 import sandbox
@@ -35,7 +36,7 @@ async def _log_ticks(event: clock.TickEvent) -> None:
 
 
 async def main() -> None:
-    logger.info("ACD Stage 0 — Zygote — booting")
+    logger.info("ACD Stage 1 — Excitable Cell — booting")
 
     # 2. State Store (must come before sandbox reads from it)
     state_store.init()
@@ -48,9 +49,11 @@ async def main() -> None:
     # 3. Event Bus — already module-level; subscribe clock tick logger
     bus.subscribe(clock.TickEvent, _log_ticks)
 
+    # 4. Arousal Regulation
+    arousal.init()
+
     # Persist stage on each boot so we can inspect it externally
     state_store.set("development_stage", stage)
-    state_store.set("last_boot", clock._start_time if hasattr(clock, "_start_time") else 0)
 
     logger.info("boot complete — stage=%d", stage)
 
