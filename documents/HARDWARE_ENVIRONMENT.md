@@ -123,8 +123,8 @@ The main limitation will likely be model design and data stability, not raw comp
 ### 4.1 Is a GPU Required?
 
 ```
-Stage 0–1:         no GPU required
-Stage 2+:          GPU strongly recommended
+Stage 0–9:         no GPU required (audio-energy features, online predictive loop, memory summaries, communication loop)
+Stage 10+:         GPU strongly recommended (visual encoders, cross-modal learning, sleep/replay training)
 Visual learning:   GPU effectively required for practical iteration
 ```
 
