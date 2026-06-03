@@ -51,12 +51,6 @@ There is no source code yet. The current phase is documentation and architecture
 
 ---
 
-## Development Branch
-
-Active development branch: `claude/keen-curie-KfL33`
-
----
-
 ## What To Do When Asked To Implement
 
 The project has no code yet. When asked to begin implementation, start from Stage 0 of [documents/STEPS.md](documents/STEPS.md) and build upward. The initialization order is defined in [documents/MODULES.md](documents/MODULES.md) (section: Initialization Order).
