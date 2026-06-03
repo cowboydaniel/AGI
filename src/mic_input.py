@@ -33,11 +33,63 @@ from sensory_gate import SensoryGateControlEvent
 
 logger = logging.getLogger(__name__)
 
-SAMPLE_RATE = 16000   # Hz — matches torchaudio default for later stages
+# Probed at init — set to the first device with actual signal, falling back
+# to the sounddevice default. Override via state_store key "mic_input.device_index".
+SAMPLE_RATE    = 16000   # Hz target; resampled from device native rate if needed
+_device_index: int | None = None   # None = sounddevice default
+_device_rate:  int        = 16000  # actual hardware rate (may differ from SAMPLE_RATE)
 
 _executor   = ThreadPoolExecutor(max_workers=1, thread_name_prefix="mic")
 _stream     = None          # sounddevice.InputStream
 _mic_active = False
+
+
+# ── device probe ──────────────────────────────────────────────────────────────
+
+def _probe_best_device() -> tuple[int | None, int]:
+    """
+    Return (device_index, sample_rate) for the first input device that
+    produces a non-zero signal. Falls back to (None, 44100) if none found.
+    Records a short burst synchronously — called once at init.
+    """
+    try:
+        import numpy as np
+        import sounddevice as sd
+
+        # Allow manual override via persisted state
+        override = state_store.get("mic_input.device_index", None)
+        if override is not None:
+            rate = int(sd.query_devices(override)["default_samplerate"])
+            logger.info("mic_input: using overridden device [%d] at %d Hz", override, rate)
+            return int(override), rate
+
+        devices = sd.query_devices()
+        for i, d in enumerate(devices):
+            if d["max_input_channels"] == 0:
+                continue
+            rate = int(d["default_samplerate"])
+            try:
+                frames = sd.rec(int(rate * 0.3), samplerate=rate, channels=1,
+                                dtype="float32", device=i, blocking=True)
+                rms = float(np.sqrt(np.mean(frames ** 2)))
+                if rms > 0.0001:
+                    logger.info(
+                        "mic_input: selected device [%d] %r  rate=%d  probe_rms=%.4f",
+                        i, d["name"], rate, rms,
+                    )
+                    state_store.set("mic_input.device_index", i)
+                    return i, rate
+            except Exception:
+                continue
+
+        logger.warning("mic_input: no live input device found — using system default")
+        default_idx = sd.default.device[0]
+        rate = int(sd.query_devices(default_idx)["default_samplerate"])
+        return None, rate
+
+    except Exception as e:
+        logger.warning("mic_input: device probe failed (%s)", e)
+        return None, 44100
 
 
 # ── feature extraction ─────────────────────────────────────────────────────────
@@ -59,10 +111,10 @@ def _extract_features(samples, chunk_ms: int) -> AudioEnergyEvent | None:
         signs[signs == 0] = 1
         zcr = float(np.mean(np.abs(np.diff(signs)) > 0))
 
-        # FFT magnitude spectrum
+        # FFT magnitude spectrum — use actual device rate for correct Hz axis
         window = np.hanning(len(x))
         X      = np.abs(np.fft.rfft(x * window))
-        freqs  = np.fft.rfftfreq(len(x), d=1.0 / SAMPLE_RATE)
+        freqs  = np.fft.rfftfreq(len(x), d=1.0 / _device_rate)
         eps    = 1e-10
 
         # Spectral centroid
@@ -100,26 +152,29 @@ def _open_stream(chunk_ms: int, loop: asyncio.AbstractEventLoop) -> bool:
     try:
         import sounddevice as sd
 
-        blocksize = int(SAMPLE_RATE * chunk_ms / 1000)
+        blocksize = int(_device_rate * chunk_ms / 1000)
 
         def _callback(indata, frames, time_info, status):
             if status:
                 logger.debug("mic_input: sd status %s", status)
             if loop.is_closed():
                 return
-            # Copy so sounddevice can reuse the buffer
             samples = indata.copy()
             asyncio.run_coroutine_threadsafe(_on_audio(samples, chunk_ms), loop)
 
         _stream = sd.InputStream(
-            samplerate=SAMPLE_RATE,
+            samplerate=_device_rate,
             channels=1,
             dtype="float32",
             blocksize=blocksize,
+            device=_device_index,
             callback=_callback,
         )
         _stream.start()
-        logger.info("mic_input: stream opened  %d Hz  %d ms chunks", SAMPLE_RATE, chunk_ms)
+        logger.info(
+            "mic_input: stream opened  device=%s  %d Hz  %d ms chunks",
+            _device_index, _device_rate, chunk_ms,
+        )
         return True
     except Exception as e:
         logger.error("mic_input: failed to open stream (%s)", e)
@@ -167,5 +222,7 @@ async def on_gate_control(event: SensoryGateControlEvent) -> None:
 
 
 def init() -> None:
+    global _device_index, _device_rate
+    _device_index, _device_rate = _probe_best_device()
     bus.subscribe(SensoryGateControlEvent, on_gate_control)
     logger.info("mic_input initialized (waiting for gate open)")
