@@ -20,7 +20,7 @@ import clock
 import state_store
 from events import (
     ArousalMode, ArousalStateEvent, SleepModeChangeEvent,
-    OrientingResponseEvent, SoundCategory,
+    OrientingResponseEvent, ArousalSignal,
 )
 
 logger = logging.getLogger(__name__)
@@ -183,13 +183,6 @@ async def on_tick(event: clock.TickEvent) -> None:
 
 
 async def on_orienting_response(event: OrientingResponseEvent) -> None:
-    """Apply the arousal delta from the orienting reflex.
-
-    This closes the sensory→arousal loop: a loud sound while sleeping will
-    spike _arousal, which may cross the wake threshold and trigger a mode
-    transition on the next tick — matching the startle/orient response in
-    biological systems.
-    """
     global _arousal
     if event.arousal_delta == 0.0:
         return
@@ -197,15 +190,18 @@ async def on_orienting_response(event: OrientingResponseEvent) -> None:
     _arousal = _clamp(_arousal + event.arousal_delta)
     if abs(_arousal - prev) > 0.01:
         logger.debug(
-            "arousal: orienting delta %+.3f  (%s)  %.3f → %.3f",
-            event.arousal_delta, event.category.value, prev, _arousal,
+            "arousal: orienting delta %+.3f  (%s/%s)  %.3f → %.3f",
+            event.arousal_delta, event.category.value,
+            event.arousal_signal.value, prev, _arousal,
         )
-    # Immediately check for wake transition so loud sounds wake the system
-    # within one event rather than waiting for the next clock tick
+    # Only act on meaningful signals — NONE and NOISE never trigger a wake
+    if event.arousal_signal == ArousalSignal.NONE:
+        return
     if _mode in (ArousalMode.DEEP_SLEEP, ArousalMode.LIGHT_SLEEP, ArousalMode.RECOVERY):
         effective_wake_threshold = _clamp(WAKE_THRESHOLD + _suppression)
         if _arousal >= effective_wake_threshold:
-            await _transition(ArousalMode.WAKEFUL, f"sensory_arousal_{event.category.value.lower()}")
+            reason = f"sensory_arousal_{event.arousal_signal.value.lower()}"
+            await _transition(ArousalMode.WAKEFUL, reason)
 
 
 def init() -> None:

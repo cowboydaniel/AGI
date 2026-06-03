@@ -34,7 +34,7 @@ import clock
 import state_store
 from events import (
     ArousalMode, ArousalStateEvent,
-    AudioEnergyEvent, SoundCategory,
+    AudioEnergyEvent, SoundCategory, ArousalSignal,
     OrientingResponseEvent, SleepRecommendationEvent,
 )
 
@@ -68,14 +68,20 @@ AROUSAL_DELTA: dict[SoundCategory, float] = {
     SoundCategory.ALARM:   +0.25,
 }
 
+# ArousalSignal rules
+ALARM_CONF_MIN           = 0.70   # below this → LOUD_SOUND, not ALARM
+ALARM_PATTERN_MS         = 500    # alarm must persist this long to be confirmed
+LOUD_SOUND_RMS_MIN       = 0.35   # rms above this triggers LOUD_SOUND even without alarm conf
+
 # Sustained silence → recommend re-sleep
 SILENCE_SLEEP_TICKS      = 30     # consecutive silent chunks
 
 
 # ── state ──────────────────────────────────────────────────────────────────────
 
-_current_mode:        ArousalMode = ArousalMode.LIGHT_SLEEP
-_silence_streak:      int         = 0
+_current_mode:        ArousalMode   = ArousalMode.LIGHT_SLEEP
+_silence_streak:      int           = 0
+_alarm_pattern_ms:    float         = 0.0   # accumulated ms of alarm-like chunks
 _last_category:       SoundCategory = SoundCategory.SILENCE
 _chunks_classified:   int         = 0
 
@@ -114,12 +120,51 @@ def _classify(ev: AudioEnergyEvent) -> tuple[SoundCategory, float]:
     return SoundCategory.NOISE, noise_conf
 
 
+def _compute_arousal_signal(
+    category: SoundCategory,
+    confidence: float,
+    rms: float,
+    chunk_ms: int,
+) -> ArousalSignal:
+    """
+    Derive the actionable wake signal from classification results.
+
+    Rules (in priority order):
+    1. ALARM requires conf >= ALARM_CONF_MIN AND alarm pattern has persisted
+       for >= ALARM_PATTERN_MS — prevents a single misclassified chunk from
+       triggering a confirmed alarm wake.
+    2. High rms with low alarm confidence → LOUD_SOUND (honest about cause).
+    3. SPEECH → SPEECH.
+    4. Everything else → NONE.
+    """
+    global _alarm_pattern_ms
+
+    alarm_like = (category == SoundCategory.ALARM)
+
+    if alarm_like:
+        _alarm_pattern_ms += chunk_ms
+    else:
+        _alarm_pattern_ms = max(0.0, _alarm_pattern_ms - chunk_ms * 0.5)
+
+    if alarm_like and confidence >= ALARM_CONF_MIN and _alarm_pattern_ms >= ALARM_PATTERN_MS:
+        return ArousalSignal.ALARM
+
+    if rms >= LOUD_SOUND_RMS_MIN:
+        return ArousalSignal.LOUD_SOUND
+
+    if category == SoundCategory.SPEECH:
+        return ArousalSignal.SPEECH
+
+    return ArousalSignal.NONE
+
+
 async def on_audio_energy(event: AudioEnergyEvent) -> None:
     global _silence_streak, _last_category, _chunks_classified
     _chunks_classified += 1
 
     category, confidence = _classify(event)
     _last_category = category
+    signal = _compute_arousal_signal(category, confidence, event.rms, event.chunk_ms)
 
     if category == SoundCategory.SILENCE:
         _silence_streak += 1
@@ -130,8 +175,9 @@ async def on_audio_energy(event: AudioEnergyEvent) -> None:
     delta = AROUSAL_DELTA[category] * (event.chunk_ms / 200.0)
 
     logger.info(
-        "orienting: %-7s  conf=%.2f  rms=%.3f  centroid=%.0fHz  band=%.2f  zcr=%.2f",
-        category.value, confidence, event.rms, event.spectral_centroid, event.band_ratio, event.zcr,
+        "orienting: %-7s  conf=%.2f  rms=%.3f  centroid=%.0fHz  band=%.2f  zcr=%.2f  signal=%s",
+        category.value, confidence, event.rms, event.spectral_centroid,
+        event.band_ratio, event.zcr, signal.value,
     )
 
     await bus.publish(
@@ -141,6 +187,7 @@ async def on_audio_energy(event: AudioEnergyEvent) -> None:
             category=category,
             confidence=confidence,
             arousal_delta=delta,
+            arousal_signal=signal,
         )
     )
 
