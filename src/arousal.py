@@ -21,6 +21,7 @@ import state_store
 from events import (
     ArousalMode, ArousalStateEvent, SleepModeChangeEvent,
     OrientingResponseEvent, ArousalSignal, PredictionErrorEvent,
+    DriveStateEvent,
 )
 
 logger = logging.getLogger(__name__)
@@ -55,6 +56,9 @@ BROADCAST_EVERY_N_TICKS   = 10
 # Stage 7 — surprise threshold modulation
 SURPRISE_THRESHOLD_SHIFT  = 0.06   # max wake threshold lowering from high surprise
 
+# Stage 6 — value/drive threshold modulation
+VALUE_BIAS_MAX            = 0.06   # max wake threshold shift from the value signal
+
 
 # ── state ──────────────────────────────────────────────────────────────────────
 
@@ -66,6 +70,7 @@ _suppression      = 0.0   # Stage 2: inhibitory suppression [0, 1]
 _refractory_ticks = 0     # ticks remaining in refractory period
 _tick_count       = 0
 _surprise_shift   = 0.0   # Stage 7: negative = threshold lowered by surprise
+_value_bias       = 0.0   # Stage 6: negative = threshold lowered by value signal
 
 
 def _clamp(v: float, lo: float = 0.0, hi: float = 1.0) -> float:
@@ -149,7 +154,7 @@ async def on_tick(event: clock.TickEvent) -> None:
         _fatigue        = _clamp(_fatigue + FATIGUE_ACCUMULATE_RATE)
 
     # Effective wake threshold: raised by suppression, lowered by surprise
-    effective_wake_threshold = _clamp(WAKE_THRESHOLD + _suppression + _surprise_shift)
+    effective_wake_threshold = _clamp(WAKE_THRESHOLD + _suppression + _surprise_shift + _value_bias)
 
     # ── transition logic ──────────────────────────────────────────────────────
 
@@ -202,7 +207,7 @@ async def on_orienting_response(event: OrientingResponseEvent) -> None:
     if event.arousal_signal == ArousalSignal.NONE:
         return
     if _mode in (ArousalMode.DEEP_SLEEP, ArousalMode.LIGHT_SLEEP, ArousalMode.RECOVERY):
-        effective_wake_threshold = _clamp(WAKE_THRESHOLD + _suppression + _surprise_shift)
+        effective_wake_threshold = _clamp(WAKE_THRESHOLD + _suppression + _surprise_shift + _value_bias)
         if _arousal >= effective_wake_threshold:
             reason = f"sensory_arousal_{event.arousal_signal.value.lower()}"
             await _transition(ArousalMode.WAKEFUL, reason)
@@ -224,11 +229,23 @@ async def on_prediction_error(event: PredictionErrorEvent) -> None:
         _surprise_shift = min(0.0, _surprise_shift + 0.002)
 
 
+async def on_drive_state(event: DriveStateEvent) -> None:
+    """
+    Stage 6 — the value signal biases the wake threshold based on whether
+    waking has recently been worthwhile. Negative bias lowers the threshold
+    (waking has paid off), positive raises it (recent wakes were nuisances).
+    Hard-clamped so value learning cannot destabilise regulation.
+    """
+    global _value_bias
+    _value_bias = _clamp(event.wake_threshold_bias, -VALUE_BIAS_MAX, VALUE_BIAS_MAX)
+
+
 def init() -> None:
     _load()
     bus.subscribe(clock.TickEvent, on_tick)
     bus.subscribe(OrientingResponseEvent, on_orienting_response)
     bus.subscribe(PredictionErrorEvent, on_prediction_error)
+    bus.subscribe(DriveStateEvent, on_drive_state)
     logger.info(
         "arousal initialized — mode=%s arousal=%.3f sleep_pressure=%.3f "
         "fatigue=%.3f suppression=%.3f",

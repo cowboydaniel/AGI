@@ -92,3 +92,48 @@ class LearningProgressEvent(bus.Event):
     mean_error:       float   # rolling mean prediction error
     error_trend:      float   # negative = improving, positive = getting worse
     model_age_chunks: int     # total chunks the model has trained on
+
+
+# ── Stage 6: Value Signal (reinforcement) ───────────────────────────────────────
+
+@dataclass
+class RewardSignalEvent(bus.Event):
+    """Positive reinforcement — something that mattered went well (GENOME L3)."""
+    magnitude: float   # [0,1]
+    drive:     str     # which drive the reward is attributed to
+    reason:    str
+
+
+@dataclass
+class PenaltySignalEvent(bus.Event):
+    """Negative reinforcement — an aversive consequence (GENOME L3)."""
+    magnitude: float   # [0,1]
+    drive:     str
+    reason:    str
+
+
+@dataclass
+class DriveStateEvent(bus.Event):
+    """Periodic broadcast of the six innate drives (GENOME D1-D6) plus the
+    value system's current wake-threshold policy bias, which the arousal
+    module reads to adapt behaviour."""
+    continuity:          float
+    stability:           float
+    energy:              float
+    curiosity:           float
+    social:              float
+    integrity:           float
+    dominant_drive:      str
+    net_value:           float
+    wake_threshold_bias: float
+
+
+@dataclass
+class CaregiverFeedbackEvent(bus.Event):
+    """Explicit caregiver reinforcement. Forward hook for the Stage 9
+    communication loop / caregiver interface — no module publishes this yet.
+    The value module already consumes it, so this becomes the strong social
+    reinforcement channel the moment a caregiver module is added."""
+    valence:   float   # [-1,1] — positive = approval, negative = disapproval
+    kind:      str     # free-form marker, e.g. "approval" / "disapproval"
+    intensity: float   # [0,1]
