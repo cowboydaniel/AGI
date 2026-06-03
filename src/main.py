@@ -71,16 +71,19 @@ async def main() -> None:
     # Persist stage on each boot so we can inspect it externally
     state_store.set("development_stage", stage)
 
-    logger.info("boot complete — stage=%d", stage)
-
     # Register signal handlers
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, _handle_signal, sig)
 
     # Launch long-lived tasks
-    bus_task = asyncio.create_task(bus.run(), name="bus")
+    bus_task   = asyncio.create_task(bus.run(),   name="bus")
     clock_task = asyncio.create_task(clock.run(), name="clock")
+
+    # All modules are subscribed — apply startup gate so sensors open immediately
+    await sensory_gate.apply_startup_gate()
+
+    logger.info("boot complete — stage=%d", stage)
 
     await _shutdown.wait()
 
