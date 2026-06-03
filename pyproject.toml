@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "acd"
+version = "0.0.0"
+description = "Artificial Cognitive Development — a sandboxed digital cognitive system grown from infant-level perception toward adult-level cognition through staged developmental learning."
+readme = "README.md"
+# Validated targets are Python 3.11 / 3.12 (documents/STACK.md).
+requires-python = ">=3.11"
+
+# Runtime dependencies — the full intended stack (documents/STACK.md,
+# documents/HARDWARE_ENVIRONMENT.md §11). This list is mirrored in
+# requirements.txt; keep the two in sync. requirements.txt is the install
+# source used by the Dockerfile and additionally configures the PyTorch CPU
+# wheel index, which cannot be expressed in PEP 621 metadata.
+dependencies = [
+    "torch",
+    "torchvision",
+    "torchaudio",
+    "numpy",
+    "opencv-python",
+    "sounddevice",
+    "gymnasium",
+    "faiss-cpu",
+]
+
+[project.optional-dependencies]
+# Test / development tooling — not part of the runtime stack.
+dev = [
+    "pytest",
+]
+
+[tool.setuptools.packages.find]
+# The acd/ package is the staged target layout. The live Stage-0 runtime
+# currently runs from the flat modules in src/ via PYTHONPATH (see Dockerfile),
+# which are intentionally not packaged yet.
+include = ["acd*"]
