@@ -38,7 +38,6 @@ SAMPLE_RATE = 16000   # Hz — matches torchaudio default for later stages
 _executor   = ThreadPoolExecutor(max_workers=1, thread_name_prefix="mic")
 _stream     = None          # sounddevice.InputStream
 _mic_active = False
-_loop: asyncio.AbstractEventLoop | None = None
 
 
 # ── feature extraction ─────────────────────────────────────────────────────────
@@ -96,7 +95,7 @@ def _extract_features(samples, chunk_ms: int) -> AudioEnergyEvent | None:
 
 # ── sounddevice stream ─────────────────────────────────────────────────────────
 
-def _open_stream(chunk_ms: int) -> bool:
+def _open_stream(chunk_ms: int, loop: asyncio.AbstractEventLoop) -> bool:
     global _stream
     try:
         import sounddevice as sd
@@ -106,11 +105,11 @@ def _open_stream(chunk_ms: int) -> bool:
         def _callback(indata, frames, time_info, status):
             if status:
                 logger.debug("mic_input: sd status %s", status)
-            if _loop is None or _loop.is_closed():
+            if loop.is_closed():
                 return
             # Copy so sounddevice can reuse the buffer
             samples = indata.copy()
-            asyncio.run_coroutine_threadsafe(_on_audio(samples, chunk_ms), _loop)
+            asyncio.run_coroutine_threadsafe(_on_audio(samples, chunk_ms), loop)
 
         _stream = sd.InputStream(
             samplerate=SAMPLE_RATE,
@@ -154,7 +153,10 @@ async def on_gate_control(event: SensoryGateControlEvent) -> None:
     should_be_active = event.microphone_enabled and event.audio_chunk_ms > 0
 
     if should_be_active and not _mic_active:
-        ok = _open_stream(event.audio_chunk_ms)
+        # Capture the running loop here — this handler runs inside asyncio.run()
+        # so get_running_loop() returns the correct live loop for the sd callback.
+        loop = asyncio.get_running_loop()
+        ok = _open_stream(event.audio_chunk_ms, loop)
         _mic_active = ok
         state_store.set("mic_input.active", _mic_active)
 
@@ -165,7 +167,5 @@ async def on_gate_control(event: SensoryGateControlEvent) -> None:
 
 
 def init() -> None:
-    global _loop
-    _loop = asyncio.get_event_loop()
     bus.subscribe(SensoryGateControlEvent, on_gate_control)
     logger.info("mic_input initialized (waiting for gate open)")
