@@ -97,6 +97,19 @@ def _probe_best_device() -> tuple[int | None, int]:
 _noise_floor_rms: float = 0.0
 
 
+def _measure_band_ratio(samples, rate: int) -> float:
+    """Compute 300–3400 Hz band energy ratio for a flat numpy array."""
+    try:
+        import numpy as np
+        eps   = 1e-10
+        X     = np.abs(np.fft.rfft(samples))
+        freqs = np.fft.rfftfreq(len(samples), d=1.0 / rate)
+        mask  = (freqs >= 300) & (freqs <= 3400)
+        return float(np.sum(X[mask]) / (np.sum(X) + eps))
+    except Exception:
+        return 0.25   # safe fallback
+
+
 def _calibrate_noise_floor(device_index: int | None, rate: int) -> float:
     """
     Record ~1.5 seconds of silence and measure the RMS noise floor.
@@ -115,22 +128,31 @@ def _calibrate_noise_floor(device_index: int | None, rate: int) -> float:
         frames = sd.rec(int(rate * 1.5), samplerate=rate, channels=1,
                         dtype="float32", device=device_index, blocking=True)
         floor = float(np.sqrt(np.mean(frames ** 2)))
-        floor = max(floor, 0.001)   # never zero
+        floor = max(floor, 0.001)
 
-        # Silence and speech thresholds are relative to the noise floor
+        # Measure the noise floor's own band_ratio so we can set the
+        # speech band threshold just above it (mic-specific calibration)
+        noise_band = _measure_band_ratio(frames.flatten(), rate)
+
+        # RMS thresholds relative to noise floor
         orienting.SILENCE_RMS_MAX  = floor * 1.5
         orienting.SPEECH_RMS_MIN   = floor * 3.0
-        orienting.SPEECH_RMS_MAX   = 0.85          # below alarm level
-        # Alarm is absolute — only genuine loud sounds (shout, bang, alarm)
+        orienting.SPEECH_RMS_MAX   = 0.85
         orienting.ALARM_RMS_MIN    = 0.85
+        # Band ratio threshold: noise floor band + small margin
+        # Prevents the mic's own hiss from satisfying the speech band criterion
+        orienting.SPEECH_BAND_RATIO_MIN = min(noise_band + 0.06, 0.40)
 
         state_store.set("mic_input.noise_floor", floor)
+        state_store.set("mic_input.noise_band_ratio", noise_band)
         logger.info(
-            "mic_input: noise floor=%.4f  thresholds → silence<%.4f  speech=%.4f–%.4f  alarm>%.4f",
-            floor,
+            "mic_input: noise floor=%.4f  band=%.2f  "
+            "thresholds → silence<%.4f  speech=%.4f–%.4f  band>%.2f  alarm>%.4f",
+            floor, noise_band,
             orienting.SILENCE_RMS_MAX,
             orienting.SPEECH_RMS_MIN,
             orienting.SPEECH_RMS_MAX,
+            orienting.SPEECH_BAND_RATIO_MIN,
             orienting.ALARM_RMS_MIN,
         )
         return floor
@@ -220,8 +242,9 @@ def _open_stream(chunk_ms: int, loop: asyncio.AbstractEventLoop) -> bool:
         )
         _stream.start()
         logger.info(
-            "mic_input: stream opened  device=%s  %d Hz  %d ms chunks",
-            _device_index, _device_rate, chunk_ms,
+            "mic_input: CONTINUOUS capture started — device=%s  %d Hz  "
+            "processing window=%d ms  (%d samples/window, zero gaps between windows)",
+            _device_index, _device_rate, chunk_ms, blocksize,
         )
         return True
     except Exception as e:
