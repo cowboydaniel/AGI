@@ -117,11 +117,12 @@ def _calibrate_noise_floor(device_index: int | None, rate: int) -> float:
         floor = float(np.sqrt(np.mean(frames ** 2)))
         floor = max(floor, 0.001)   # never zero
 
-        # Set thresholds relative to the measured floor
+        # Silence and speech thresholds are relative to the noise floor
         orienting.SILENCE_RMS_MAX  = floor * 1.5
         orienting.SPEECH_RMS_MIN   = floor * 3.0
-        orienting.SPEECH_RMS_MAX   = floor * 25.0
-        orienting.ALARM_RMS_MIN    = floor * 15.0
+        orienting.SPEECH_RMS_MAX   = 0.85          # below alarm level
+        # Alarm is absolute — only genuine loud sounds (shout, bang, alarm)
+        orienting.ALARM_RMS_MIN    = 0.85
 
         state_store.set("mic_input.noise_floor", floor)
         logger.info(

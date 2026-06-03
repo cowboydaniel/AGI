@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 SILENCE_RMS_MAX          = 0.02
 
 # Alarm: loud AND either tonal (low flatness) or very high centroid
-ALARM_RMS_MIN            = 0.35
+ALARM_RMS_MIN            = 0.85
 ALARM_FLATNESS_MAX       = 0.25   # tonal
 ALARM_CENTROID_MIN       = 3000.0 # Hz — high-pitched alarm
 
