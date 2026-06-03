@@ -127,11 +127,10 @@ async def on_audio_energy(event: AudioEnergyEvent) -> None:
 
     delta = AROUSAL_DELTA[category]
 
-    if category in (SoundCategory.SPEECH, SoundCategory.ALARM):
-        logger.info(
-            "orienting: %-7s  conf=%.2f  rms=%.3f  centroid=%.0fHz  band=%.2f",
-            category.value, confidence, event.rms, event.spectral_centroid, event.band_ratio,
-        )
+    logger.info(
+        "orienting: %-7s  conf=%.2f  rms=%.3f  centroid=%.0fHz  band=%.2f  zcr=%.2f",
+        category.value, confidence, event.rms, event.spectral_centroid, event.band_ratio, event.zcr,
+    )
 
     await bus.publish(
         OrientingResponseEvent(
