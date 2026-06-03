@@ -42,11 +42,24 @@ class SoundCategory(str, Enum):
     ALARM   = "ALARM"
 
 
+class ArousalSignal(str, Enum):
+    """
+    Actionable wake signal derived from classification + confidence + pattern.
+    Distinct from SoundCategory — a low-confidence ALARM classification
+    produces LOUD_SOUND, not ALARM.
+    """
+    NONE       = "NONE"
+    SPEECH     = "SPEECH"
+    LOUD_SOUND = "LOUD_SOUND"   # high rms, low-confidence alarm
+    ALARM      = "ALARM"        # high-confidence + pattern persistent
+
+
 @dataclass
 class OrientingResponseEvent(bus.Event):
-    category:      SoundCategory
-    confidence:    float
-    arousal_delta: float
+    category:       SoundCategory
+    confidence:     float
+    arousal_delta:  float
+    arousal_signal: ArousalSignal  # what arousal module should act on
 
 
 @dataclass
