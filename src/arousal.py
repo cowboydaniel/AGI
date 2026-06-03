@@ -14,37 +14,16 @@ Extends Stage 1 with:
 
 import logging
 from dataclasses import dataclass
-from enum import Enum
 
 import bus
 import clock
 import state_store
+from events import (
+    ArousalMode, ArousalStateEvent, SleepModeChangeEvent,
+    OrientingResponseEvent, SoundCategory,
+)
 
 logger = logging.getLogger(__name__)
-
-
-class ArousalMode(str, Enum):
-    DEEP_SLEEP  = "DEEP_SLEEP"
-    LIGHT_SLEEP = "LIGHT_SLEEP"
-    WAKEFUL     = "WAKEFUL"
-    FOCUSED     = "FOCUSED"
-    RECOVERY    = "RECOVERY"
-
-
-@dataclass
-class ArousalStateEvent(bus.Event):
-    mode:             ArousalMode
-    arousal_level:    float
-    sleep_pressure:   float
-    fatigue_level:    float
-    suppression:      float   # Stage 2: inhibitory suppression level
-
-
-@dataclass
-class SleepModeChangeEvent(bus.Event):
-    previous_mode: ArousalMode
-    new_mode:      ArousalMode
-    reason:        str
 
 
 # ── tuneable parameters ────────────────────────────────────────────────────────
@@ -200,9 +179,36 @@ async def on_tick(event: clock.TickEvent) -> None:
         _save()
 
 
+async def on_orienting_response(event: OrientingResponseEvent) -> None:
+    """Apply the arousal delta from the orienting reflex.
+
+    This closes the sensory→arousal loop: a loud sound while sleeping will
+    spike _arousal, which may cross the wake threshold and trigger a mode
+    transition on the next tick — matching the startle/orient response in
+    biological systems.
+    """
+    global _arousal
+    if event.arousal_delta == 0.0:
+        return
+    prev     = _arousal
+    _arousal = _clamp(_arousal + event.arousal_delta)
+    if abs(_arousal - prev) > 0.01:
+        logger.debug(
+            "arousal: orienting delta %+.3f  (%s)  %.3f → %.3f",
+            event.arousal_delta, event.category.value, prev, _arousal,
+        )
+    # Immediately check for wake transition so loud sounds wake the system
+    # within one event rather than waiting for the next clock tick
+    if _mode in (ArousalMode.DEEP_SLEEP, ArousalMode.LIGHT_SLEEP, ArousalMode.RECOVERY):
+        effective_wake_threshold = _clamp(WAKE_THRESHOLD + _suppression)
+        if _arousal >= effective_wake_threshold:
+            await _transition(ArousalMode.WAKEFUL, f"sensory_arousal_{event.category.value.lower()}")
+
+
 def init() -> None:
     _load()
     bus.subscribe(clock.TickEvent, on_tick)
+    bus.subscribe(OrientingResponseEvent, on_orienting_response)
     logger.info(
         "arousal initialized — mode=%s arousal=%.3f sleep_pressure=%.3f "
         "fatigue=%.3f suppression=%.3f",
