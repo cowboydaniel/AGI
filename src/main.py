@@ -13,6 +13,7 @@ import arousal
 import bus
 import clock
 import sandbox
+import sensory_gate
 import state_store
 
 logging.basicConfig(
@@ -36,7 +37,7 @@ async def _log_ticks(event: clock.TickEvent) -> None:
 
 
 async def main() -> None:
-    logger.info("ACD Stage 2 — Inhibitory Circuit — booting")
+    logger.info("ACD Stage 3 — Sensory Gate — booting")
 
     # 2. State Store (must come before sandbox reads from it)
     state_store.init()
@@ -51,6 +52,9 @@ async def main() -> None:
 
     # 4. Arousal Regulation
     arousal.init()
+
+    # 5. Sensory Gating
+    sensory_gate.init()
 
     # Persist stage on each boot so we can inspect it externally
     state_store.set("development_stage", stage)
