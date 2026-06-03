@@ -78,12 +78,15 @@ def _save() -> None:
 
 def _load() -> None:
     global _mode, _arousal, _sleep_pressure, _fatigue, _suppression
-    _mode           = ArousalMode(state_store.get("arousal.mode", ArousalMode.LIGHT_SLEEP.value))
-    _arousal        = state_store.get("arousal.arousal_level",  0.1)
+    # Process restart is an implicit wake event — always start in LIGHT_SLEEP
+    # so the mic is open and sensory input can reach the system immediately.
+    # Deep/focused states only exist within a running session.
+    _mode           = ArousalMode.LIGHT_SLEEP
+    _arousal        = max(0.1, state_store.get("arousal.arousal_level", 0.1))
     _sleep_pressure = state_store.get("arousal.sleep_pressure", 0.0)
     _fatigue        = state_store.get("arousal.fatigue_level",  0.0)
     _suppression    = state_store.get("arousal.suppression",    0.0)
-    # Refractory counter is not persisted — it resets on restart intentionally
+    # Refractory counter not persisted — resets on restart intentionally
 
 
 async def _transition(new_mode: ArousalMode, reason: str) -> None:
