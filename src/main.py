@@ -36,7 +36,7 @@ async def _log_ticks(event: clock.TickEvent) -> None:
 
 
 async def main() -> None:
-    logger.info("ACD Stage 1 — Excitable Cell — booting")
+    logger.info("ACD Stage 2 — Inhibitory Circuit — booting")
 
     # 2. State Store (must come before sandbox reads from it)
     state_store.init()
