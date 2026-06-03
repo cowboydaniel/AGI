@@ -13,6 +13,7 @@ import arousal
 import bus
 import clock
 import homeostasis
+import mic_input
 import orienting
 import sandbox
 import sensory_gate
@@ -39,7 +40,7 @@ async def _log_ticks(event: clock.TickEvent) -> None:
 
 
 async def main() -> None:
-    logger.info("ACD Stage 5 — Homeostasis — booting")
+    logger.info("ACD Stage 6 — Mic Input — booting")
 
     # 2. State Store (must come before sandbox reads from it)
     state_store.init()
@@ -64,6 +65,9 @@ async def main() -> None:
     # Homeostasis (no fixed slot in init order — runs alongside everything)
     homeostasis.init()
 
+    # 6. Sensor Input — mic (camera input added at Stage 7+)
+    mic_input.init()
+
     # Persist stage on each boot so we can inspect it externally
     state_store.set("development_stage", stage)
 
@@ -81,6 +85,7 @@ async def main() -> None:
     await _shutdown.wait()
 
     logger.info("shutting down tasks")
+    mic_input._close_stream()
     for task in (clock_task, bus_task):
         task.cancel()
         try:
