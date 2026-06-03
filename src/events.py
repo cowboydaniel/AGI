@@ -1,0 +1,65 @@
+"""
+Shared event type definitions.
+
+Thin module with no dependencies beyond bus, so any module can import from
+here without creating circular dependencies.
+"""
+
+from dataclasses import dataclass
+from enum import Enum
+
+import bus
+
+
+class ArousalMode(str, Enum):
+    DEEP_SLEEP  = "DEEP_SLEEP"
+    LIGHT_SLEEP = "LIGHT_SLEEP"
+    WAKEFUL     = "WAKEFUL"
+    FOCUSED     = "FOCUSED"
+    RECOVERY    = "RECOVERY"
+
+
+@dataclass
+class ArousalStateEvent(bus.Event):
+    mode:           ArousalMode
+    arousal_level:  float
+    sleep_pressure: float
+    fatigue_level:  float
+    suppression:    float
+
+
+@dataclass
+class SleepModeChangeEvent(bus.Event):
+    previous_mode: ArousalMode
+    new_mode:      ArousalMode
+    reason:        str
+
+
+class SoundCategory(str, Enum):
+    SILENCE = "SILENCE"
+    NOISE   = "NOISE"
+    SPEECH  = "SPEECH"
+    ALARM   = "ALARM"
+
+
+@dataclass
+class OrientingResponseEvent(bus.Event):
+    category:      SoundCategory
+    confidence:    float
+    arousal_delta: float
+
+
+@dataclass
+class SleepRecommendationEvent(bus.Event):
+    reason:                   str
+    sustained_silence_chunks: int
+
+
+@dataclass
+class AudioEnergyEvent(bus.Event):
+    rms:               float
+    zcr:               float
+    spectral_centroid: float
+    spectral_flatness: float
+    band_ratio:        float
+    chunk_ms:          int

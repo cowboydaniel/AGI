@@ -27,50 +27,18 @@ ALARM     → strong arousal boost; publish OrientingResponseEvent(category=ALAR
 """
 
 import logging
-from dataclasses import dataclass, field
-from enum import Enum
+from dataclasses import dataclass
 
 import bus
 import clock
 import state_store
-from arousal import ArousalMode, ArousalStateEvent
+from events import (
+    ArousalMode, ArousalStateEvent,
+    AudioEnergyEvent, SoundCategory,
+    OrientingResponseEvent, SleepRecommendationEvent,
+)
 
 logger = logging.getLogger(__name__)
-
-
-# ── shared event: produced by Stage 6, consumed here ──────────────────────────
-
-@dataclass
-class AudioEnergyEvent(bus.Event):
-    """Acoustic features extracted from one audio chunk by the mic input loop."""
-    rms:              float   # root-mean-square amplitude [0, 1]
-    zcr:              float   # zero-crossing rate [0, 1] normalised to chunk length
-    spectral_centroid: float  # Hz — centre of mass of the spectrum
-    spectral_flatness: float  # [0, 1] — 0=tonal, 1=white noise
-    band_ratio:       float   # energy in 300-3400 Hz / total energy
-    chunk_ms:         int     # chunk duration in ms
-
-
-# ── output events ──────────────────────────────────────────────────────────────
-
-class SoundCategory(str, Enum):
-    SILENCE = "SILENCE"
-    NOISE   = "NOISE"
-    SPEECH  = "SPEECH"
-    ALARM   = "ALARM"
-
-
-@dataclass
-class OrientingResponseEvent(bus.Event):
-    category:      SoundCategory
-    confidence:    float          # [0, 1] heuristic confidence
-    arousal_delta: float          # suggested arousal change
-
-
-@dataclass
-class SleepRecommendationEvent(bus.Event):
-    reason: str
-    sustained_silence_chunks: int
 
 
 # ── classification thresholds ──────────────────────────────────────────────────

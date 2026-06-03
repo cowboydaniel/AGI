@@ -28,7 +28,7 @@ from concurrent.futures import ThreadPoolExecutor
 import bus
 import clock
 import state_store
-from orienting import AudioEnergyEvent
+from events import AudioEnergyEvent
 from sensory_gate import SensoryGateControlEvent
 
 logger = logging.getLogger(__name__)

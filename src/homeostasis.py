@@ -24,7 +24,7 @@ from dataclasses import dataclass, field
 import bus
 import clock
 import state_store
-from arousal import ArousalMode, ArousalStateEvent
+from events import ArousalMode, ArousalStateEvent
 
 logger = logging.getLogger(__name__)
 
