@@ -20,7 +20,7 @@ import clock
 import state_store
 from events import (
     ArousalMode, ArousalStateEvent, SleepModeChangeEvent,
-    OrientingResponseEvent, ArousalSignal,
+    OrientingResponseEvent, ArousalSignal, PredictionErrorEvent,
 )
 
 logger = logging.getLogger(__name__)
@@ -52,6 +52,9 @@ SUPPRESSION_BOOST         = 0.4    # how much suppression a false wake adds
 
 BROADCAST_EVERY_N_TICKS   = 10
 
+# Stage 7 — surprise threshold modulation
+SURPRISE_THRESHOLD_SHIFT  = 0.06   # max wake threshold lowering from high surprise
+
 
 # ── state ──────────────────────────────────────────────────────────────────────
 
@@ -62,6 +65,7 @@ _fatigue          = 0.0
 _suppression      = 0.0   # Stage 2: inhibitory suppression [0, 1]
 _refractory_ticks = 0     # ticks remaining in refractory period
 _tick_count       = 0
+_surprise_shift   = 0.0   # Stage 7: negative = threshold lowered by surprise
 
 
 def _clamp(v: float, lo: float = 0.0, hi: float = 1.0) -> float:
@@ -144,8 +148,8 @@ async def on_tick(event: clock.TickEvent) -> None:
         _arousal        = _clamp(_arousal + AROUSAL_WAKE_RATE)
         _fatigue        = _clamp(_fatigue + FATIGUE_ACCUMULATE_RATE)
 
-    # Effective wake threshold is raised by suppression
-    effective_wake_threshold = _clamp(WAKE_THRESHOLD + _suppression)
+    # Effective wake threshold: raised by suppression, lowered by surprise
+    effective_wake_threshold = _clamp(WAKE_THRESHOLD + _suppression + _surprise_shift)
 
     # ── transition logic ──────────────────────────────────────────────────────
 
@@ -198,16 +202,33 @@ async def on_orienting_response(event: OrientingResponseEvent) -> None:
     if event.arousal_signal == ArousalSignal.NONE:
         return
     if _mode in (ArousalMode.DEEP_SLEEP, ArousalMode.LIGHT_SLEEP, ArousalMode.RECOVERY):
-        effective_wake_threshold = _clamp(WAKE_THRESHOLD + _suppression)
+        effective_wake_threshold = _clamp(WAKE_THRESHOLD + _suppression + _surprise_shift)
         if _arousal >= effective_wake_threshold:
             reason = f"sensory_arousal_{event.arousal_signal.value.lower()}"
             await _transition(ArousalMode.WAKEFUL, reason)
+
+
+async def on_prediction_error(event: PredictionErrorEvent) -> None:
+    """
+    Surprise modulates the effective wake threshold.
+    High surprise → threshold lowers (system becomes easier to wake).
+    Low surprise sustained → threshold nudges up (familiar environment, relax).
+    """
+    global _surprise_shift
+    if event.surprise > 0.6:
+        # Unexpected event — lower threshold to make system more alert
+        _surprise_shift = max(-SURPRISE_THRESHOLD_SHIFT,
+                               _surprise_shift - SURPRISE_THRESHOLD_SHIFT * 0.3)
+    else:
+        # Familiar — slowly recover threshold toward neutral
+        _surprise_shift = min(0.0, _surprise_shift + 0.002)
 
 
 def init() -> None:
     _load()
     bus.subscribe(clock.TickEvent, on_tick)
     bus.subscribe(OrientingResponseEvent, on_orienting_response)
+    bus.subscribe(PredictionErrorEvent, on_prediction_error)
     logger.info(
         "arousal initialized — mode=%s arousal=%.3f sleep_pressure=%.3f "
         "fatigue=%.3f suppression=%.3f",
