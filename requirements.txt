@@ -1,0 +1,33 @@
+# ACD runtime dependencies — the full intended stack.
+# See documents/STACK.md (First-Stack Summary) and
+# documents/HARDWARE_ENVIRONMENT.md §11 (Python / ML Environment).
+#
+# This file is the install source used by the Dockerfile. It is mirrored by
+# [project.dependencies] in pyproject.toml — keep the two lists in sync.
+#
+# Torch resolves to CPU wheels: Stage 0–1 needs no GPU
+# (HARDWARE_ENVIRONMENT.md §4.1). The extra index below makes the CPU builds
+# available while keeping PyPI primary for the non-torch packages; pip prefers
+# the '+cpu' local-version builds when the base versions match. For a guaranteed
+# CPU resolve, pin e.g. `torch==<version>+cpu` once a lock is generated.
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+# ── ML framework (PyTorch) ───────────────────────────────────────────────────
+torch
+torchvision
+torchaudio
+
+# ── Numerics ─────────────────────────────────────────────────────────────────
+numpy
+
+# ── Vision (needs libgl1 + libglib2.0-0 at runtime) ──────────────────────────
+opencv-python
+
+# ── Audio I/O — PortAudio bindings (needs libportaudio2 at runtime) ──────────
+sounddevice
+
+# ── Sandbox / RL environment interface ───────────────────────────────────────
+gymnasium
+
+# ── Associative vector memory (CPU build) ────────────────────────────────────
+faiss-cpu
