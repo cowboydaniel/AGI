@@ -92,6 +92,53 @@ def _probe_best_device() -> tuple[int | None, int]:
         return None, 44100
 
 
+# ── noise floor calibration ────────────────────────────────────────────────────
+
+_noise_floor_rms: float = 0.0
+
+
+def _calibrate_noise_floor(device_index: int | None, rate: int) -> float:
+    """
+    Record ~1.5 seconds of silence and measure the RMS noise floor.
+    Updates orienting thresholds so they are relative to this mic's baseline.
+    Called once at init, after device selection.
+    """
+    try:
+        import numpy as np
+        import sounddevice as sd
+        from orienting import (
+            SILENCE_RMS_MAX, SPEECH_RMS_MIN, SPEECH_RMS_MAX,
+            ALARM_RMS_MIN,
+        )
+        import orienting
+
+        frames = sd.rec(int(rate * 1.5), samplerate=rate, channels=1,
+                        dtype="float32", device=device_index, blocking=True)
+        floor = float(np.sqrt(np.mean(frames ** 2)))
+        floor = max(floor, 0.001)   # never zero
+
+        # Set thresholds relative to the measured floor
+        orienting.SILENCE_RMS_MAX  = floor * 1.5
+        orienting.SPEECH_RMS_MIN   = floor * 3.0
+        orienting.SPEECH_RMS_MAX   = floor * 25.0
+        orienting.ALARM_RMS_MIN    = floor * 15.0
+
+        state_store.set("mic_input.noise_floor", floor)
+        logger.info(
+            "mic_input: noise floor=%.4f  thresholds → silence<%.4f  speech=%.4f–%.4f  alarm>%.4f",
+            floor,
+            orienting.SILENCE_RMS_MAX,
+            orienting.SPEECH_RMS_MIN,
+            orienting.SPEECH_RMS_MAX,
+            orienting.ALARM_RMS_MIN,
+        )
+        return floor
+
+    except Exception as e:
+        logger.warning("mic_input: noise floor calibration failed (%s)", e)
+        return 0.02
+
+
 # ── feature extraction ─────────────────────────────────────────────────────────
 
 def _extract_features(samples, chunk_ms: int) -> AudioEnergyEvent | None:
@@ -222,7 +269,9 @@ async def on_gate_control(event: SensoryGateControlEvent) -> None:
 
 
 def init() -> None:
-    global _device_index, _device_rate
+    global _device_index, _device_rate, _noise_floor_rms
     _device_index, _device_rate = _probe_best_device()
+    if _device_index is not None or _device_rate > 0:
+        _noise_floor_rms = _calibrate_noise_floor(_device_index, _device_rate)
     bus.subscribe(SensoryGateControlEvent, on_gate_control)
     logger.info("mic_input initialized (waiting for gate open)")
