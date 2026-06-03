@@ -76,3 +76,19 @@ class AudioEnergyEvent(bus.Event):
     spectral_flatness: float
     band_ratio:        float
     chunk_ms:          int
+
+
+@dataclass
+class PredictionErrorEvent(bus.Event):
+    """Published by the predictor each time it processes a new observation."""
+    error:          float   # raw mean-squared prediction error
+    surprise:       float   # normalised [0,1] — how unexpected this was
+    feature_errors: list    # per-feature errors [rms, zcr, centroid, flatness, band]
+
+
+@dataclass
+class LearningProgressEvent(bus.Event):
+    """Periodic summary of how the predictor's model is improving."""
+    mean_error:       float   # rolling mean prediction error
+    error_trend:      float   # negative = improving, positive = getting worse
+    model_age_chunks: int     # total chunks the model has trained on
