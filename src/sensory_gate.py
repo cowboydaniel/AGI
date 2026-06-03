@@ -89,7 +89,7 @@ _CAMERA_FPS: dict[ArousalMode, int] = {
 
 # Audio chunk size (ms) per arousal mode — larger = lower CPU, worse latency
 _AUDIO_CHUNK_MS: dict[ArousalMode, int] = {
-    ArousalMode.DEEP_SLEEP:  0,
+    ArousalMode.DEEP_SLEEP:  500,   # low-rate monitoring so loud/sustained speech can wake
     ArousalMode.LIGHT_SLEEP: 200,
     ArousalMode.RECOVERY:    200,
     ArousalMode.WAKEFUL:     50,

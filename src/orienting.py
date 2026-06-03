@@ -59,12 +59,13 @@ SPEECH_ZCR_MIN           = 0.04   # speech has moderate ZCR
 SPEECH_ZCR_MAX           = 0.35
 SPEECH_FLATNESS_MAX      = 0.65   # speech is semi-tonal
 
-# Arousal deltas per category
+# Arousal deltas per category — base values for a 200ms chunk.
+# Scaled by chunk_ms/200 so a 500ms deep-sleep chunk carries proportional weight.
 AROUSAL_DELTA: dict[SoundCategory, float] = {
     SoundCategory.SILENCE: -0.02,
     SoundCategory.NOISE:    0.00,
     SoundCategory.SPEECH:  +0.08,
-    SoundCategory.ALARM:   +0.20,
+    SoundCategory.ALARM:   +0.25,
 }
 
 # Sustained silence → recommend re-sleep
@@ -125,7 +126,8 @@ async def on_audio_energy(event: AudioEnergyEvent) -> None:
     else:
         _silence_streak = 0
 
-    delta = AROUSAL_DELTA[category]
+    # Scale delta by chunk duration so longer chunks carry proportional weight
+    delta = AROUSAL_DELTA[category] * (event.chunk_ms / 200.0)
 
     logger.info(
         "orienting: %-7s  conf=%.2f  rms=%.3f  centroid=%.0fHz  band=%.2f  zcr=%.2f",
