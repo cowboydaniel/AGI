@@ -89,7 +89,7 @@ _CAMERA_FPS: dict[ArousalMode, int] = {
 
 # Audio chunk size (ms) per arousal mode — larger = lower CPU, worse latency
 _AUDIO_CHUNK_MS: dict[ArousalMode, int] = {
-    ArousalMode.DEEP_SLEEP:  0,
+    ArousalMode.DEEP_SLEEP:  500,   # low-rate monitoring so loud/sustained speech can wake
     ArousalMode.LIGHT_SLEEP: 200,
     ArousalMode.RECOVERY:    200,
     ArousalMode.WAKEFUL:     50,
@@ -107,7 +107,7 @@ _microphone_enabled: bool = False
 _frame_rate_limit:  int  = 0
 _audio_chunk_ms:    int  = 0
 
-_current_mode: ArousalMode = ArousalMode.LIGHT_SLEEP
+_current_mode: ArousalMode = ArousalMode.LIGHT_SLEEP  # overwritten in init() from state
 
 
 async def _apply_gate(mode: ArousalMode) -> None:
@@ -163,7 +163,7 @@ async def apply_startup_gate() -> None:
 
 
 def init() -> None:
-    global _camera_hw_present, _microphone_hw_present
+    global _camera_hw_present, _microphone_hw_present, _current_mode
 
     _camera_hw_present     = _probe_camera()
     _microphone_hw_present = _probe_microphone()
@@ -175,8 +175,13 @@ def init() -> None:
         logger.warning("sensory_gate: microphone disabled — hardware not found")
         state_store.set("sensory_gate.microphone_hw_present", False)
 
+    # Sync to actual arousal mode so startup gate fires correctly
+    _current_mode = ArousalMode(
+        state_store.get("arousal.mode", ArousalMode.LIGHT_SLEEP.value)
+    )
+
     bus.subscribe(ArousalStateEvent, on_arousal_state)
     logger.info(
-        "sensory_gate initialized — camera_hw=%s  mic_hw=%s",
-        _camera_hw_present, _microphone_hw_present,
+        "sensory_gate initialized — camera_hw=%s  mic_hw=%s  startup_mode=%s",
+        _camera_hw_present, _microphone_hw_present, _current_mode.value,
     )
