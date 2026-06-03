@@ -41,7 +41,7 @@ The end goal is a digital cognitive architecture that **functionally approximate
 
 The developmental trajectory runs from infant to adult cognition, grown through staged development rather than pretraining. Biology is the template for architecture and growth dynamics, not substrate.
 
-For the full architectural specification, see [DESIGN.md](DESIGN.md). For motivation and scientific rationale, see [MISSION.md](MISSION.md).
+For the full architectural specification, see [documents/DESIGN.md](documents/DESIGN.md). For motivation and scientific rationale, see [documents/MISSION.md](documents/MISSION.md).
 
 ---
 
@@ -97,7 +97,24 @@ It must learn language socially, through caregiver interaction, from raw audio.
 
 Development proceeds from early language grounding toward full adult-level cognitive integration — object permanence, compositional grammar, abstract reasoning, planning, autobiographical identity, and social cognition.
 
-For the staged developmental roadmap, see [STEPS.md](STEPS.md). For the implementation technology stack, see [STACK.md](STACK.md). For module interface specifications, see [MODULES.md](MODULES.md). For data flow architecture, see [DATA_FLOW.md](DATA_FLOW.md). For the predictive learning engine spec, see [PREDICTIVE_ENGINE.md](PREDICTIVE_ENGINE.md). For the caregiver interface spec, see [CAREGIVER_INTERFACE.md](CAREGIVER_INTERFACE.md). For the sandbox enforcement mechanism, see [SANDBOX.md](SANDBOX.md). For quantified stage transition criteria, see [STAGE_CRITERIA.md](STAGE_CRITERIA.md). For memory and storage architecture, see [MEMORY_ARCHITECTURE.md](MEMORY_ARCHITECTURE.md). For hardware and environment requirements, see [HARDWARE_ENVIRONMENT.md](HARDWARE_ENVIRONMENT.md). For the scientific evaluation protocol, see [EVALUATION_PROTOCOL.md](EVALUATION_PROTOCOL.md).
+All detailed documentation lives in the [`documents/`](documents/) folder:
+
+| Document | Contents |
+|---|---|
+| [MISSION.md](documents/MISSION.md) | Scientific rationale |
+| [DESIGN.md](documents/DESIGN.md) | Architectural principles |
+| [GENOME.md](documents/GENOME.md) | Immutable drives, axioms, learning rules |
+| [STEPS.md](documents/STEPS.md) | Developmental stage roadmap |
+| [STACK.md](documents/STACK.md) | Technology stack decisions |
+| [MODULES.md](documents/MODULES.md) | Module interface specifications |
+| [DATA_FLOW.md](documents/DATA_FLOW.md) | Async event-driven data flow architecture |
+| [PREDICTIVE_ENGINE.md](documents/PREDICTIVE_ENGINE.md) | JEPA-style latent predictive world model |
+| [CAREGIVER_INTERFACE.md](documents/CAREGIVER_INTERFACE.md) | Human teaching surface specification |
+| [SANDBOX.md](documents/SANDBOX.md) | Four-layer sandbox enforcement |
+| [STAGE_CRITERIA.md](documents/STAGE_CRITERIA.md) | Quantified stage transition thresholds |
+| [MEMORY_ARCHITECTURE.md](documents/MEMORY_ARCHITECTURE.md) | Hybrid memory and storage architecture |
+| [HARDWARE_ENVIRONMENT.md](documents/HARDWARE_ENVIRONMENT.md) | Hardware tiers and environment requirements |
+| [EVALUATION_PROTOCOL.md](documents/EVALUATION_PROTOCOL.md) | Scientific evaluation and apple test protocol |
 
 ---
 
