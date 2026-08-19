@@ -60,11 +60,17 @@ except ImportError:
 
 DURATION = 120.0
 DEVICE = None
-for i, arg in enumerate(sys.argv[1:], start=1):
-    if arg == "--device" and i + 1 < len(sys.argv):
-        DEVICE = int(sys.argv[i + 1])
-    elif arg.replace(".", "", 1).isdigit():
+_args = sys.argv[1:]
+_i = 0
+while _i < len(_args):
+    arg = _args[_i]
+    if arg == "--device" and _i + 1 < len(_args):
+        DEVICE = int(_args[_i + 1])
+        _i += 2                      # consume the value, so it is not also
+        continue                     # read as the duration
+    if arg.replace(".", "", 1).isdigit():
         DURATION = float(arg)
+    _i += 1
 
 KEYS = {
     "g": "GOOD", " ": "GOOD", "b": "BAD", "y": "YES",
@@ -77,7 +83,8 @@ _running = True
 
 
 def out(line: str = "") -> None:
-    print(line, flush=True)
+    # Erase the meter's in-place line first, or event text lands on top of it.
+    print("\r" + " " * 78 + "\r" + line, flush=True)
 
 
 # ── bus subscribers ────────────────────────────────────────────────────────────
