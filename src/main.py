@@ -10,9 +10,12 @@ import sys
 from pathlib import Path
 
 import arousal
+import audio_motor
 import bus
+import caregiver
 import clock
 import homeostasis
+import memory
 import mic_input
 import orienting
 import predictor
@@ -42,7 +45,7 @@ async def _log_ticks(event: clock.TickEvent) -> None:
 
 
 async def main() -> None:
-    logger.info("ACD — Stage 6 Value Signal + Stage 7 Continuous Predictive Loop — booting")
+    logger.info("ACD — Stages 0-8 (memory, voice, caregiver channel) — booting")
 
     # 2. State Store (must come before sandbox reads from it)
     state_store.init()
@@ -74,8 +77,19 @@ async def main() -> None:
     #    the predictor because it consumes prediction-error / learning-progress.
     value.init()
 
+    # 10. Memory / Consolidation (Stage 8: Long-Term Memory Formation) —
+    #     after value so reward signals are available to bind to episodes.
+    memory.init()
+
     # 6. Sensor Input — mic
     mic_input.init()
+
+    # 6b. Audio motor / voice. Vocalisation is off unless explicitly enabled
+    #     and is gated by the AUDIO_OUTPUT capability (stage 3+).
+    audio_motor.init()
+
+    # 12. Caregiver Interface — last, so feedback lands on a fully built system.
+    caregiver.init()
 
     # Persist stage on each boot so we can inspect it externally
     state_store.set("development_stage", stage)
@@ -111,6 +125,10 @@ async def main() -> None:
         except asyncio.CancelledError:
             pass
 
+    # Checkpoint everything learned this session before the process dies.
+    predictor.save_state()
+    memory.save_state()
+    audio_motor.save_state()
     value.mark_clean_shutdown()
     state_store.close()
     logger.info("shutdown complete")

@@ -240,8 +240,71 @@ async def on_arousal_state(event: ArousalStateEvent) -> None:
     _current_mode = event.mode
 
 
+# ── persistence ────────────────────────────────────────────────────────────────
+#
+# Continuity (design principle 4): what the model has learned must outlive the
+# process. Without this every restart resets W to the identity and discards the
+# whole developmental history — the system would relive its first minute forever.
+# The weights ARE the memory at this stage (MEMORY_ARCHITECTURE.md section 9).
+
+def save_state() -> None:
+    """Persist the learned model. Cheap enough to call on every sleep cycle."""
+    try:
+        state_store.set("predictor.W", _W)
+        state_store.set("predictor.b", _b)
+        state_store.set("predictor.rhythm_counts", _rhythm_counts)
+        state_store.set("predictor.ewa_error", _ewa_error)
+        state_store.set("predictor.chunks_trained", _chunks_trained)
+        state_store.set("predictor.error_history", list(_error_history))
+        logger.info("predictor: model saved — age=%d chunks  ewa_error=%.6f",
+                    _chunks_trained, _ewa_error)
+    except Exception as e:
+        logger.warning("predictor: save failed (%s)", e)
+
+
+def load_state() -> bool:
+    """Restore a previously learned model. Returns True if one was found."""
+    global _W, _b, _rhythm_counts, _ewa_error, _chunks_trained
+
+    W = state_store.get("predictor.W", None)
+    if W is None:
+        return False
+    try:
+        # Shape-check before adopting: a model saved under a different
+        # FEATURE_DIM must be discarded rather than silently corrupting.
+        if len(W) != FEATURE_DIM or any(len(row) != FEATURE_DIM for row in W):
+            logger.warning("predictor: stored model has wrong shape — starting fresh")
+            return False
+        b = state_store.get("predictor.b", None)
+        if b is None or len(b) != FEATURE_DIM:
+            return False
+
+        _W = [[float(v) for v in row] for row in W]
+        _b = [float(v) for v in b]
+
+        rhythm = state_store.get("predictor.rhythm_counts", None)
+        if rhythm and len(rhythm) == N_CATEGORIES:
+            _rhythm_counts = [[float(v) for v in row] for row in rhythm]
+
+        _ewa_error = float(state_store.get("predictor.ewa_error", 0.0))
+        _chunks_trained = int(state_store.get("predictor.chunks_trained", 0))
+
+        _error_history.clear()
+        for e in state_store.get("predictor.error_history", []) or []:
+            _error_history.append(float(e))
+
+        logger.info("predictor: model restored — age=%d chunks  ewa_error=%.6f",
+                    _chunks_trained, _ewa_error)
+        return True
+    except Exception as e:
+        logger.warning("predictor: load failed (%s) — starting fresh", e)
+        return False
+
+
 def init() -> None:
     bus.subscribe(AudioEnergyEvent, on_audio_energy)
     bus.subscribe(ArousalStateEvent, on_arousal_state)
-    logger.info("predictor initialized — online linear predictor  dim=%d  lr=%.3f",
-                FEATURE_DIM, LEARNING_RATE)
+    restored = load_state()
+    logger.info("predictor initialized — online linear predictor  dim=%d  lr=%.3f  %s",
+                FEATURE_DIM, LEARNING_RATE,
+                f"resumed at {_chunks_trained} chunks" if restored else "fresh model")
