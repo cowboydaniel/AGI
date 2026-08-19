@@ -180,7 +180,13 @@ def _extract_features(samples, chunk_ms: int) -> AudioEnergyEvent | None:
     try:
         import numpy as np
 
-        x = samples.flatten().astype(np.float32)
+        # Downmix to mono by averaging channels. Flattening instead would
+        # interleave L,R,L,R into one stream, doubling the apparent
+        # zero-crossing rate and smearing the spectrum.
+        x = np.asarray(samples, dtype=np.float32)
+        if x.ndim > 1:
+            x = x.mean(axis=1)
+        x = x.reshape(-1)
         if len(x) == 0:
             return None
 
@@ -243,9 +249,17 @@ def _open_stream(chunk_ms: int, loop: asyncio.AbstractEventLoop) -> bool:
             samples = indata.copy()
             asyncio.run_coroutine_threadsafe(_on_audio(samples, chunk_ms), loop)
 
+        # Open with the device's own channel count. Forcing mono on a device
+        # that reports two input channels is accepted by some host APIs and
+        # then silently delivers nothing (WASAPI shared mode does exactly
+        # this), which looks identical to a dead microphone. Multi-channel
+        # frames are downmixed to mono during feature extraction.
+        probe_idx = _device_index if _device_index is not None else sd.default.device[0]
+        channels = max(1, min(int(sd.query_devices(probe_idx)["max_input_channels"]), 2))
+
         _stream = sd.InputStream(
             samplerate=_device_rate,
-            channels=1,
+            channels=channels,
             dtype="float32",
             blocksize=blocksize,
             device=_device_index,
