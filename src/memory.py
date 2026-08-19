@@ -42,6 +42,7 @@ is an arbitrary integer id, never a name.
 import logging
 import math
 import time
+from collections import deque
 from dataclasses import dataclass, field, asdict
 
 import bus
@@ -62,17 +63,24 @@ SUMMARY_DIM         = 5      # the five acoustic features
 TRAJECTORY_BINS     = 3      # coarse start/middle/end shape per feature
 
 EPISODE_MIN_CHUNKS  = 2      # shorter than this is a blip, not an experience
-EPISODE_MAX_CHUNKS  = 25     # ~5 s at a 200 ms window: an utterance, not an hour
+EPISODE_MAX_CHUNKS  = 10     # ~2 s at a 200 ms window. A sound that runs past
+                             # this is not a segmented utterance, so it is
+                             # DISCARDED rather than stored: keeping it merges
+                             # several utterances plus the gaps between them
+                             # into one meaningless blob that then pollutes a
+                             # schema.
 EPISODE_CLOSE_AFTER = 3      # consecutive silent chunks that end an episode
 
 # Hearing threshold. A perceptual sensitivity (genome-level), not knowledge:
 # it says how loud something must be to count as an event, never what the
 # event is. Set well above the measured noise floor, because room hiss and
 # fan noise otherwise segment into endless empty "experiences".
-EPISODE_FLOOR_MULT  = 8.0    # multiple of the calibrated noise floor
-EPISODE_ABS_MIN_RMS = 0.015  # absolute backstop if the floor calibrates low
-EPISODE_PEAK_MULT   = 2.5    # an episode's loudest chunk must clear the
+EPISODE_FLOOR_MULT  = 3.0    # multiple of the *current* background level
+EPISODE_ABS_MIN_RMS = 0.015  # absolute backstop when the room is truly silent
+EPISODE_PEAK_MULT   = 1.5    # an episode's loudest chunk must clear the
                              # hearing threshold by this much to be kept
+BACKGROUND_WINDOW   = 150    # chunks (~30 s) used to estimate the background
+BACKGROUND_PCTILE   = 0.20   # low percentile of that window = ambient level
 
 SCHEMA_MATCH_DIST   = 0.095  # match-space distance below which two episodes
                              # are treated as instances of the same shape.
@@ -185,6 +193,13 @@ _open_start:      float = 0.0
 _open_peak:       float = 0.0
 _silent_run:      int = 0
 
+# Rolling record of recent loudness, used to track the ambient level. A fixed
+# threshold set once at startup fails the moment the room changes: if the
+# background rises above it every chunk reads as sound, episodes never close,
+# and whole minutes merge into one "experience". Sensory systems adapt
+# continuously; so does this.
+_recent_rms: deque = deque(maxlen=BACKGROUND_WINDOW)
+
 _current_mode: ArousalMode = ArousalMode.LIGHT_SLEEP
 _last_reward:  float = 0.0
 _consolidations: int = 0
@@ -238,6 +253,24 @@ def _trajectory(frames: list) -> list:
         for d in range(SUMMARY_DIM):
             out.append(_mean([f[d] for f in chunk]))
     return out
+
+
+def background_level() -> float:
+    """Current ambient loudness: a low percentile of recent chunks.
+
+    A percentile rather than a mean, so a burst of speech inside the window
+    does not drag the estimate up and deafen the system to the next word.
+    """
+    if len(_recent_rms) < 20:
+        floor = state_store.get("mic_input.noise_floor", 0.001) or 0.001
+        return float(floor)
+    ordered = sorted(_recent_rms)
+    return ordered[int(len(ordered) * BACKGROUND_PCTILE)]
+
+
+def hearing_threshold() -> float:
+    """How loud a chunk must be, right now, to count as an event."""
+    return max(background_level() * EPISODE_FLOOR_MULT, EPISODE_ABS_MIN_RMS)
 
 
 def _importance(mean_error: float, error_delta: float, reward: float,
@@ -373,9 +406,7 @@ async def _close_episode(now: float) -> None:
     # A sound that only grazed the hearing threshold is a blip in the room,
     # not an experience worth remembering. Without this, near-threshold noise
     # forms episodes that then match into schemas and dilute their prototypes.
-    floor = state_store.get("mic_input.noise_floor", 0.001) or 0.001
-    threshold = max(floor * EPISODE_FLOOR_MULT, EPISODE_ABS_MIN_RMS)
-    if _open_peak < threshold * EPISODE_PEAK_MULT:
+    if _open_peak < hearing_threshold() * EPISODE_PEAK_MULT:
         logger.debug("memory: discarding marginal episode (peak=%.4f)", _open_peak)
         _reset_open()
         return
@@ -533,11 +564,10 @@ async def on_audio_energy(event: AudioEnergyEvent) -> None:
     features = _encode(event)
     now = event.timestamp
 
-    # Hearing threshold: loud enough to be an event at all. Anything quieter
-    # is treated as silence and closes whatever episode is open.
-    floor = state_store.get("mic_input.noise_floor", 0.001) or 0.001
-    threshold = max(floor * EPISODE_FLOOR_MULT, EPISODE_ABS_MIN_RMS)
-    is_sound = event.rms > threshold
+    # Hearing threshold, recomputed against the current background. Anything
+    # quieter is treated as silence and closes whatever episode is open.
+    _recent_rms.append(event.rms)
+    is_sound = event.rms > hearing_threshold()
 
     if is_sound:
         if not _open_features:
@@ -546,7 +576,10 @@ async def on_audio_energy(event: AudioEnergyEvent) -> None:
         _open_peak = max(_open_peak, event.rms)
         _silent_run = 0
         if len(_open_features) >= EPISODE_MAX_CHUNKS:
-            await _close_episode(now)
+            # Sound that will not stop is not a segmented experience.
+            logger.debug("memory: discarding run-on sound (%d chunks)",
+                         len(_open_features))
+            _reset_open()
     elif _open_features:
         _silent_run += 1
         if _silent_run >= EPISODE_CLOSE_AFTER:

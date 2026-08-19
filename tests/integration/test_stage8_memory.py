@@ -55,6 +55,7 @@ def _reset() -> Path:
     memory._next_schema_id = 1
     memory._consolidations = 0
     memory._current_mode = ArousalMode.WAKEFUL
+    memory._recent_rms.clear()      # background estimate is module state too
     memory._reset_open()
     # Known noise floor so "is this sound?" is deterministic.
     state_store.set("mic_input.noise_floor", 0.001)
@@ -115,7 +116,7 @@ def test_episode_is_a_summary_not_a_recording():
     _reset()
 
     async def run():
-        await _utterance(_SOUND_A, n=40)
+        await _utterance(_SOUND_A, n=memory.EPISODE_MAX_CHUNKS - 1)
 
     asyncio.run(run())
 
@@ -124,6 +125,40 @@ def test_episode_is_a_summary_not_a_recording():
     raw = ep.duration_chunks * memory.SUMMARY_DIM
     assert stored < raw, \
         f"stored size {stored} must be smaller than the raw stream {raw}"
+
+
+def test_run_on_sound_is_discarded_not_stored():
+    """A sound that never stops is not a segmented utterance.
+
+    Storing it merges several utterances and the gaps between them into one
+    blob, which then pollutes whatever schema it lands in.
+    """
+    _reset()
+
+    async def run():
+        await _utterance(_SOUND_A, n=memory.EPISODE_MAX_CHUNKS + 12)
+
+    asyncio.run(run())
+
+    assert memory._episodes == [],         "a sound exceeding the episode cap must be discarded, not stored"
+
+
+def test_hearing_threshold_tracks_the_background():
+    """Sensory adaptation: a fixed threshold fails when the room changes."""
+    _reset()
+
+    quiet = memory.hearing_threshold()
+
+    async def run():
+        # A sustained loud background, as a noisy room would produce.
+        for i in range(memory.BACKGROUND_WINDOW):
+            await memory.on_audio_energy(_audio(0.20, t=i * 0.2))
+
+    asyncio.run(run())
+    noisy = memory.hearing_threshold()
+
+    assert noisy > quiet,         f"the threshold must rise with the background ({quiet:.4f} -> {noisy:.4f})"
+    assert memory.background_level() > 0.1,         "the background estimate must reflect a loud room"
 
 
 def test_blip_too_short_to_be_an_experience_is_discarded():
