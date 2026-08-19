@@ -62,11 +62,21 @@ SUMMARY_DIM         = 5      # the five acoustic features
 TRAJECTORY_BINS     = 3      # coarse start/middle/end shape per feature
 
 EPISODE_MIN_CHUNKS  = 2      # shorter than this is a blip, not an experience
-EPISODE_MAX_CHUNKS  = 150    # force a close so one long noise is not one episode
+EPISODE_MAX_CHUNKS  = 25     # ~5 s at a 200 ms window: an utterance, not an hour
 EPISODE_CLOSE_AFTER = 3      # consecutive silent chunks that end an episode
 
-SCHEMA_MATCH_DIST   = 0.22   # summary-space distance below which two episodes
-                             # are treated as instances of the same shape
+# Hearing threshold. A perceptual sensitivity (genome-level), not knowledge:
+# it says how loud something must be to count as an event, never what the
+# event is. Set well above the measured noise floor, because room hiss and
+# fan noise otherwise segment into endless empty "experiences".
+EPISODE_FLOOR_MULT  = 8.0    # multiple of the calibrated noise floor
+EPISODE_ABS_MIN_RMS = 0.015  # absolute backstop if the floor calibrates low
+
+SCHEMA_MATCH_DIST   = 0.06   # match-space distance below which two episodes
+                             # are treated as instances of the same shape.
+                             # Too loose and every sound collapses into one
+                             # schema; too tight and one sound fragments into
+                             # many. Over-discrimination is the safer error.
 SCHEMA_LEARN_RATE   = 0.25   # how far a prototype moves toward a new instance
 
 MAX_EPISODES        = 400    # hard ceiling; decay prunes below this
@@ -254,11 +264,24 @@ def _decay_score(age: float, reward: float, recurrence: int,
 
 # ── schema formation ───────────────────────────────────────────────────────────
 
-def _match_schema(summary: list) -> tuple:
+def _match_vector(ep: "Episode") -> list:
+    """The vector two episodes are compared on.
+
+    Summary alone is a bag of averages: a short word and a long hum of the
+    same loudness and brightness look identical. Appending the trajectory
+    makes temporal shape part of identity, which is what distinguishes one
+    utterance from another.
+    """
+    return list(ep.summary) + list(ep.trajectory)
+
+
+def _match_schema(vector: list) -> tuple:
     """Nearest existing schema and its distance."""
     best, best_d = None, float("inf")
     for s in _schemas:
-        d = _distance(summary, s.prototype)
+        if len(s.prototype) != len(vector):
+            continue          # a schema from an older match space — ignore it
+        d = _distance(vector, s.prototype)
         if d < best_d:
             best, best_d = s, d
     return best, best_d
@@ -273,13 +296,14 @@ async def _assign_schema(ep: Episode, now: float) -> None:
     """
     global _next_schema_id
 
-    match, dist = _match_schema(ep.summary)
+    vector = _match_vector(ep)
+    match, dist = _match_schema(vector)
 
     if match is not None and dist <= SCHEMA_MATCH_DIST:
         # Known shape — pull the prototype toward this instance and reinforce.
         match.prototype = [
             p + SCHEMA_LEARN_RATE * (v - p)
-            for p, v in zip(match.prototype, ep.summary)
+            for p, v in zip(match.prototype, vector)
         ]
         match.instances += 1
         match.strength += max(0.0, ep.reward_total) + 0.1
@@ -298,7 +322,7 @@ async def _assign_schema(ep: Episode, now: float) -> None:
 
     schema = Schema(
         schema_id=_next_schema_id,
-        prototype=list(ep.summary),
+        prototype=list(vector),
         instances=1,
         strength=max(0.0, ep.reward_total),
         first_seen=now,
@@ -491,9 +515,11 @@ async def on_audio_energy(event: AudioEnergyEvent) -> None:
     features = _encode(event)
     now = event.timestamp
 
-    # Silence relative to the calibrated noise floor closes an open episode.
+    # Hearing threshold: loud enough to be an event at all. Anything quieter
+    # is treated as silence and closes whatever episode is open.
     floor = state_store.get("mic_input.noise_floor", 0.001) or 0.001
-    is_sound = event.rms > floor * 1.5
+    threshold = max(floor * EPISODE_FLOOR_MULT, EPISODE_ABS_MIN_RMS)
+    is_sound = event.rms > threshold
 
     if is_sound:
         if not _open_features:
