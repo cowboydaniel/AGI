@@ -76,6 +76,13 @@ class AudioEnergyEvent(bus.Event):
     spectral_flatness: float
     band_ratio:        float
     chunk_ms:          int
+    # Periodicity: strength of the strongest repeating cycle in the waveform
+    # (normalised autocorrelation peak). A voice, a hum or a musical note is
+    # periodic; static, hiss and wind are not. This is the physical difference
+    # between "a sound something made" and "the room being noisy", and it is
+    # innate machinery, not knowledge — every mammal ear does it.
+    periodicity:       float = 0.0
+    f0_hz:             float = 0.0   # fundamental of that cycle, 0 if none
 
 
 @dataclass

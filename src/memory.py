@@ -7,9 +7,12 @@ This module turns a continuous sensory stream into durable structure through
 four mechanisms, in order:
 
   1. Episode segmentation  — the stream is cut into bounded experiences.
-     An episode opens when sound rises above the calibrated noise floor and
-     closes after sustained silence. Nothing labels the episode; it is simply
-     "a thing that happened".
+     An episode opens when the innate salience detectors (salience.py,
+     GENOME.md P1) judge something worth attending to, and closes when they
+     stop. Segmentation is therefore driven by structure — periodicity and
+     speech-like rhythm — not by loudness, so a fan or steady hiss never
+     becomes an "experience" however loud it is. Nothing labels the episode;
+     it is simply "a thing that happened".
 
   2. Compressed summaries  — an episode is never stored raw. It is reduced to
      a fixed-size sketch: per-feature mean and spread, a coarse trajectory,
@@ -49,6 +52,7 @@ import bus
 import clock
 import predictor
 import state_store
+import salience
 from events import (
     AudioEnergyEvent, ArousalMode, ArousalStateEvent, OrientingResponseEvent,
     PredictionErrorEvent, RewardSignalEvent, PenaltySignalEvent,
@@ -403,11 +407,10 @@ async def _close_episode(now: float) -> None:
         _reset_open()
         return
 
-    # A sound that only grazed the hearing threshold is a blip in the room,
-    # not an experience worth remembering. Without this, near-threshold noise
-    # forms episodes that then match into schemas and dilute their prototypes.
-    if _open_peak < hearing_threshold() * EPISODE_PEAK_MULT:
-        logger.debug("memory: discarding marginal episode (peak=%.4f)", _open_peak)
+    # Salience already required structure, so no loudness test is needed here
+    # beyond rejecting an episode that was effectively silent.
+    if _open_peak < EPISODE_ABS_MIN_RMS:
+        logger.debug("memory: discarding near-silent episode (peak=%.4f)", _open_peak)
         _reset_open()
         return
 
@@ -564,10 +567,11 @@ async def on_audio_energy(event: AudioEnergyEvent) -> None:
     features = _encode(event)
     now = event.timestamp
 
-    # Hearing threshold, recomputed against the current background. Anything
-    # quieter is treated as silence and closes whatever episode is open.
+    # Attention gate (GENOME P1): structure, not volume. observe() is
+    # idempotent per chunk, so consulting it here cannot double-count the
+    # chunk in salience's own history nor depend on bus dispatch order.
     _recent_rms.append(event.rms)
-    is_sound = event.rms > hearing_threshold()
+    is_sound, _score, _onset, _per, _rhy, _why = salience.observe(event)
 
     if is_sound:
         if not _open_features:

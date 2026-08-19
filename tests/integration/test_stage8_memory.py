@@ -27,6 +27,7 @@ if str(_SRC) not in sys.path:
 import bus
 import memory
 import predictor
+import salience
 import state_store
 from events import (
     AudioEnergyEvent, ArousalMode, ArousalStateEvent, CaregiverFeedbackEvent,
@@ -56,6 +57,9 @@ def _reset() -> Path:
     memory._consolidations = 0
     memory._current_mode = ArousalMode.WAKEFUL
     memory._recent_rms.clear()      # background estimate is module state too
+    salience._energy.clear()        # salience carries its own history
+    salience._salient_count = 0
+    salience._total_count = 0
     memory._reset_open()
     # Known noise floor so "is this sound?" is deterministic.
     state_store.set("mic_input.noise_floor", 0.001)
@@ -66,16 +70,32 @@ def _published(kind) -> list:
     return [e for e in _PUBLISHED if isinstance(e, kind)]
 
 
-def _audio(rms, zcr=0.1, centroid=1200.0, flat=0.3, band=0.6, t=0.0):
+def _audio(rms, zcr=0.1, centroid=1200.0, flat=0.3, band=0.6, t=0.0,
+           periodicity=0.85):
+    """A chunk of sound.
+
+    periodicity defaults high because episodes are gated by innate salience
+    (GENOME P1) rather than loudness: an unstructured chunk is correctly
+    ignored however loud it is, so a test that wants an experience to form
+    must supply something with the character of a real sound source.
+    """
     return AudioEnergyEvent(source="t", timestamp=t, rms=rms, zcr=zcr,
                             spectral_centroid=centroid, spectral_flatness=flat,
-                            band_ratio=band, chunk_ms=200)
+                            band_ratio=band, chunk_ms=200,
+                            periodicity=periodicity, f0_hz=180.0)
+
+
+# A syllable envelope. Real speech pulses at syllable rate; a constant-
+# amplitude tone does not, and the innate rhythm detector correctly declines
+# to treat one as speech-like. Fixtures must therefore modulate.
+_ENVELOPE = (0.55, 1.0, 0.75, 1.0, 0.6, 0.95, 0.7, 1.0, 0.65, 0.9)
 
 
 async def _utterance(profile, n=6, t0=0.0, error=0.05):
-    """Feed one bounded sound followed by enough silence to close it."""
+    """Feed one bounded, syllable-modulated sound, then silence to close it."""
     for i in range(n):
-        await memory.on_audio_energy(_audio(*profile, t=t0 + i * 0.2))
+        shaped = (profile[0] * _ENVELOPE[i % len(_ENVELOPE)],) + tuple(profile[1:])
+        await memory.on_audio_energy(_audio(*shaped, t=t0 + i * 0.2))
         await memory.on_prediction_error(PredictionErrorEvent(
             source="t", timestamp=t0 + i * 0.2, error=error, surprise=0.3,
             feature_errors=[error] * 5))
@@ -83,7 +103,8 @@ async def _utterance(profile, n=6, t0=0.0, error=0.05):
             source="t", timestamp=t0 + i * 0.2, category=SoundCategory.SPEECH,
             confidence=0.9, arousal_delta=0.1, arousal_signal=ArousalSignal.SPEECH))
     for i in range(memory.EPISODE_CLOSE_AFTER + 1):
-        await memory.on_audio_energy(_audio(0.0001, t=t0 + (n + i) * 0.2))
+        await memory.on_audio_energy(_audio(0.0001, t=t0 + (n + i) * 0.2,
+                                            periodicity=0.0))
 
 
 # Two clearly different acoustic shapes.
@@ -127,20 +148,26 @@ def test_episode_is_a_summary_not_a_recording():
         f"stored size {stored} must be smaller than the raw stream {raw}"
 
 
-def test_run_on_sound_is_discarded_not_stored():
-    """A sound that never stops is not a segmented utterance.
+def test_unchanging_sound_habituates_instead_of_running_on():
+    """A sound that never changes stops holding attention.
 
-    Storing it merges several utterances and the gaps between them into one
-    blob, which then pollutes whatever schema it lands in.
+    Previously a sustained sound produced one enormous episode spanning many
+    utterances. Salience now stops firing once the background estimate catches
+    up with a constant stimulus, which is habituation: the episode closes on
+    its own and the drone never becomes a giant meaningless "experience".
     """
     _reset()
 
     async def run():
-        await _utterance(_SOUND_A, n=memory.EPISODE_MAX_CHUNKS + 12)
+        # A long, utterly unchanging periodic tone.
+        for i in range(60):
+            await memory.on_audio_energy(_audio(0.10, t=i * 0.2))
 
     asyncio.run(run())
 
-    assert memory._episodes == [],         "a sound exceeding the episode cap must be discarded, not stored"
+    assert len(memory._episodes) <= 1,         "an unchanging drone must not fragment into many experiences"
+    for ep in memory._episodes:
+        assert ep.duration_chunks < memory.EPISODE_MAX_CHUNKS,             "habituation must close the episode before the hard cap"
 
 
 def test_hearing_threshold_tracks_the_background():
@@ -272,7 +299,8 @@ def test_reward_raises_importance_relative_to_an_identical_unrewarded_episode():
         plain = memory._episodes[0].importance
 
         for i in range(6):
-            await memory.on_audio_energy(_audio(*_SOUND_A, t=10.0 + i * 0.2))
+            shaped = (_SOUND_A[0] * _ENVELOPE[i % len(_ENVELOPE)],) + _SOUND_A[1:]
+            await memory.on_audio_energy(_audio(*shaped, t=10.0 + i * 0.2))
             await memory.on_prediction_error(PredictionErrorEvent(
                 source="t", timestamp=10.0 + i * 0.2, error=0.05, surprise=0.3,
                 feature_errors=[0.05] * 5))
@@ -280,7 +308,8 @@ def test_reward_raises_importance_relative_to_an_identical_unrewarded_episode():
             source="value", timestamp=11.0, magnitude=0.9, drive="social",
             reason="test"))
         for i in range(memory.EPISODE_CLOSE_AFTER + 1):
-            await memory.on_audio_energy(_audio(0.0001, t=12.0 + i * 0.2))
+            await memory.on_audio_energy(_audio(0.0001, t=12.0 + i * 0.2,
+                                                periodicity=0.0))
 
         return plain, memory._episodes[1].importance
 

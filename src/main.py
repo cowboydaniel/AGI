@@ -19,6 +19,7 @@ import memory
 import mic_input
 import orienting
 import predictor
+import salience
 import sandbox
 import sensory_gate
 import state_store
@@ -63,6 +64,10 @@ async def main() -> None:
 
     # 5. Sensory Gating
     sensory_gate.init()
+
+    # 5b. Salience (GENOME P1 newborn biases) — must precede anything that
+    #     reacts to sound, since it decides what counts as an event at all.
+    salience.init()
 
     # 6. Orienting Reflex
     orienting.init()
