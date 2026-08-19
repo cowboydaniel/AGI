@@ -71,6 +71,8 @@ EPISODE_CLOSE_AFTER = 3      # consecutive silent chunks that end an episode
 # fan noise otherwise segment into endless empty "experiences".
 EPISODE_FLOOR_MULT  = 8.0    # multiple of the calibrated noise floor
 EPISODE_ABS_MIN_RMS = 0.015  # absolute backstop if the floor calibrates low
+EPISODE_PEAK_MULT   = 2.5    # an episode's loudest chunk must clear the
+                             # hearing threshold by this much to be kept
 
 SCHEMA_MATCH_DIST   = 0.06   # match-space distance below which two episodes
                              # are treated as instances of the same shape.
@@ -176,6 +178,7 @@ _open_categories: list = []
 _open_errors:     list = []
 _open_reward:     float = 0.0
 _open_start:      float = 0.0
+_open_peak:       float = 0.0
 _silent_run:      int = 0
 
 _current_mode: ArousalMode = ArousalMode.LIGHT_SLEEP
@@ -344,12 +347,13 @@ async def _assign_schema(ep: Episode, now: float) -> None:
 
 def _reset_open() -> None:
     global _open_features, _open_categories, _open_errors, _open_reward
-    global _open_start, _silent_run
+    global _open_start, _open_peak, _silent_run
     _open_features = []
     _open_categories = []
     _open_errors = []
     _open_reward = 0.0
     _open_start = 0.0
+    _open_peak = 0.0
     _silent_run = 0
 
 
@@ -359,6 +363,16 @@ async def _close_episode(now: float) -> None:
 
     frames = _open_features
     if len(frames) < EPISODE_MIN_CHUNKS:
+        _reset_open()
+        return
+
+    # A sound that only grazed the hearing threshold is a blip in the room,
+    # not an experience worth remembering. Without this, near-threshold noise
+    # forms episodes that then match into schemas and dilute their prototypes.
+    floor = state_store.get("mic_input.noise_floor", 0.001) or 0.001
+    threshold = max(floor * EPISODE_FLOOR_MULT, EPISODE_ABS_MIN_RMS)
+    if _open_peak < threshold * EPISODE_PEAK_MULT:
+        logger.debug("memory: discarding marginal episode (peak=%.4f)", _open_peak)
         _reset_open()
         return
 
@@ -510,7 +524,7 @@ async def consolidate() -> None:
 # ── handlers ───────────────────────────────────────────────────────────────────
 
 async def on_audio_energy(event: AudioEnergyEvent) -> None:
-    global _open_start, _silent_run
+    global _open_start, _silent_run, _open_peak
 
     features = _encode(event)
     now = event.timestamp
@@ -525,6 +539,7 @@ async def on_audio_energy(event: AudioEnergyEvent) -> None:
         if not _open_features:
             _open_start = now
         _open_features.append(features)
+        _open_peak = max(_open_peak, event.rms)
         _silent_run = 0
         if len(_open_features) >= EPISODE_MAX_CHUNKS:
             await _close_episode(now)
