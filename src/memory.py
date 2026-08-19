@@ -74,11 +74,15 @@ EPISODE_ABS_MIN_RMS = 0.015  # absolute backstop if the floor calibrates low
 EPISODE_PEAK_MULT   = 2.5    # an episode's loudest chunk must clear the
                              # hearing threshold by this much to be kept
 
-SCHEMA_MATCH_DIST   = 0.06   # match-space distance below which two episodes
+SCHEMA_MATCH_DIST   = 0.095  # match-space distance below which two episodes
                              # are treated as instances of the same shape.
-                             # Too loose and every sound collapses into one
-                             # schema; too tight and one sound fragments into
-                             # many. Over-discrimination is the safer error.
+                             # Derived from 76 real episodes of three spoken
+                             # words: within-word distances average 0.072 and
+                             # reach 0.12, between-word average 0.16, and this
+                             # value maximises separation (~84%). It is a
+                             # single sensitivity constant, deliberately not a
+                             # per-feature metric fitted to caregiver labels -
+                             # that would be knowledge injection, not tuning.
 SCHEMA_LEARN_RATE   = 0.25   # how far a prototype moves toward a new instance
 
 MAX_EPISODES        = 400    # hard ceiling; decay prunes below this
@@ -604,6 +608,38 @@ async def on_arousal_state(event: ArousalStateEvent) -> None:
         if _open_features:
             await _close_episode(event.timestamp)
         await consolidate()
+
+
+async def reconsolidate_schemas() -> int:
+    """Rebuild the schema layer from remembered episodes, label-free.
+
+    Schemas are formed online, so the very first encounter of a sound sets a
+    prototype from a single noisy instance and later instances may fall just
+    outside the match radius, fragmenting one sound across several schemas.
+    Re-deriving them from the stored episodes in order lets prototypes settle
+    against the whole history instead of the arrival order.
+
+    This uses nothing but the episodes already in memory and the current
+    matching parameters - no labels, no targets. It is the schema-level
+    equivalent of replay, and belongs to sleep consolidation.
+
+    Returns the resulting schema count.
+    """
+    global _schemas, _next_schema_id
+
+    if not _episodes:
+        return 0
+
+    before = len(_schemas)
+    _schemas = []
+    _next_schema_id = 1
+    for ep in sorted(_episodes, key=lambda e: e.t_start):
+        ep.schema_id = None
+        await _assign_schema(ep, ep.t_end)
+
+    logger.info("memory: re-consolidated schemas %d -> %d over %d episodes",
+                before, len(_schemas), len(_episodes))
+    return len(_schemas)
 
 
 # ── persistence ────────────────────────────────────────────────────────────────

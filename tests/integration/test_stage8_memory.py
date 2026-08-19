@@ -310,6 +310,56 @@ def test_reinforced_memory_survives_pruning():
     assert len(memory._schemas) == 1, "a recurring schema must not be forgotten"
 
 
+def test_reconsolidation_merges_fragments_of_one_sound():
+    """Online schema formation fragments a sound when early prototypes are set
+    from noisy first instances; re-deriving from stored episodes repairs it."""
+    _reset()
+
+    async def run():
+        # Same sound, drifting slightly - online matching can split this.
+        for i in range(6):
+            drift = 1.0 + i * 0.02
+            await _utterance((0.10 * drift, 0.10 * drift, 1200.0 * drift,
+                              0.30 * drift, 0.60), t0=i * 10.0)
+
+    asyncio.run(run())
+    before = len(memory._schemas)
+
+    # Force fragmentation, then let re-consolidation regroup from scratch.
+    memory._schemas = []
+    memory._next_schema_id = 1
+    original = memory.SCHEMA_MATCH_DIST
+    try:
+        memory.SCHEMA_MATCH_DIST = 0.0001          # everything is its own schema
+        asyncio.run(memory.reconsolidate_schemas())
+        fragmented = len(memory._schemas)
+        memory.SCHEMA_MATCH_DIST = original
+        asyncio.run(memory.reconsolidate_schemas())
+        merged = len(memory._schemas)
+    finally:
+        memory.SCHEMA_MATCH_DIST = original
+
+    assert fragmented > merged,         f"re-consolidation must merge fragments ({fragmented} -> {merged})"
+    assert all(e.schema_id is not None for e in memory._episodes),         "every episode must be reassigned to a schema"
+    assert before > 0, "precondition: episodes formed schemas online"
+
+
+def test_reconsolidation_uses_no_labels():
+    """It must work from stored episodes alone - no targets, no categories."""
+    _reset()
+
+    async def run():
+        await _utterance(_SOUND_A, t0=0.0)
+        await _utterance(_SOUND_B, t0=20.0)
+        return await memory.reconsolidate_schemas()
+
+    n = asyncio.run(run())
+
+    assert n == 2, "two distinct sounds must re-derive as two schemas"
+    for s in memory._schemas:
+        assert not hasattr(s, "label") and not hasattr(s, "word"),             "re-consolidation must not attach names to schemas"
+
+
 # -- consolidation and continuity -----------------------------------------------
 
 def test_sleep_triggers_consolidation():
