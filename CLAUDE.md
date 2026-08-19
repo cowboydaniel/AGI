@@ -17,24 +17,66 @@ See [README.md](README.md) for the project overview.
 ```
 README.md               Project overview
 CLAUDE.md               This file
+pyproject.toml          Package metadata (packages `acd*` only; src/ is unpackaged)
+requirements.txt        Install source used by the Dockerfile (adds the torch CPU index)
+Dockerfile              python:3.12-slim; copies src/, runs `python src/main.py`
+docker-compose.yml
 documents/              All design and specification documents
-  MISSION.md
-  DESIGN.md
-  GENOME.md
-  STEPS.md
-  STACK.md
-  MODULES.md
-  DATA_FLOW.md
-  PREDICTIVE_ENGINE.md
-  CAREGIVER_INTERFACE.md
-  SANDBOX.md
-  STAGE_CRITERIA.md
-  MEMORY_ARCHITECTURE.md
-  HARDWARE_ENVIRONMENT.md
-  EVALUATION_PROTOCOL.md
+  MISSION.md            MEMORY_ARCHITECTURE.md
+  DESIGN.md             HARDWARE_ENVIRONMENT.md
+  GENOME.md             EVALUATION_PROTOCOL.md
+  STEPS.md              STAGE_CRITERIA.md
+  STACK.md              CAREGIVER_INTERFACE.md
+  MODULES.md            PREDICTIVE_ENGINE.md
+  DATA_FLOW.md          SANDBOX.md
+src/                    THE LIVE RUNTIME — flat modules, imported by PYTHONPATH
+acd/                    Staged target package layout — scaffolding only, all files empty
+sandbox/                Runtime mount points (checkpoints/, state/, tmp/) — .gitkeep only
+tests/                  unit/, integration/, evaluation/
+tools/                  mic_diag.py — microphone diagnostic
+scripts/                checkpoint.sh, run_container.sh, run_dev.sh — all empty stubs
 ```
 
-There is no source code yet. The current phase is documentation and architecture design.
+### Two source trees — read this before writing code
+
+- **`src/` is the live system.** Flat modules, no package, imported via `PYTHONPATH=/app/src`.
+  This is what `src/main.py` boots and what the Dockerfile ships.
+- **`acd/` is the target layout** described in MODULES.md (`acd/bus/`, `acd/modules/`,
+  `acd/models/`, `acd/memory/`, `acd/sensors/`, `acd/sandbox/`, `acd/state/`, `acd/genome/`,
+  `acd/ui/`). Every one of its ~51 `.py` files is currently **empty**. It is a
+  directory-shaped plan, not code.
+
+Do not add behaviour to `acd/` unless you are deliberately performing the migration.
+Continue Stage work in `src/` and match the conventions already there.
+
+---
+
+## Implementation Status
+
+Stages 0–7 of [documents/STEPS.md](documents/STEPS.md) are implemented in `src/`
+(~2,400 lines). Each module carries a docstring naming its stage.
+
+| Stage | Name | Module |
+|-------|------|--------|
+| 0 | Zygote | `src/main.py`, `src/state_store.py` (SQLite), `src/clock.py`, `src/sandbox.py` |
+| 1 | Excitable Cell | `src/bus.py`, `src/events.py` (typed async pub/sub) |
+| 2 | Inhibitory Circuit | `src/arousal.py` (refractory periods, oscillation damping) |
+| 3 | Sensory Gate and Buffer | `src/sensory_gate.py` (hardware probing, arousal-linked throttling) |
+| 4 | Orienting Reflex | `src/orienting.py` (heuristic sound categorisation, no ML) |
+| 5 | Homeostasis Services | `src/homeostasis.py` (four sleep-time maintenance services) |
+| 6 | Value Signal | `src/value.py` (reinforcement / value), `src/mic_input.py` (live mic capture) |
+| 7 | Continuous Predictive Loop | `src/predictor.py` (online linear latent predictor + rhythm model) |
+
+Stage 8 (long-term memory), Stage 9 (communication loop), and Stages 10–11 are unbuilt.
+
+**Reality checks on the stack:**
+- The only sensory modality wired up is **audio**. There is no camera path yet —
+  `src/` has no vision module, so success criteria A, C, and D are not yet reachable.
+- **PyTorch is declared but unused.** Nothing in `src/` imports torch; only `numpy` and
+  `sounddevice` are actually imported. The Stage 7 predictor is hand-rolled SGD on a
+  single linear layer — deliberately the simplest JEPA-shaped thing that learns.
+- FAISS, OpenCV, and gymnasium are declared dependencies with no call sites yet.
+- The `scripts/*.sh` helpers are empty files.
 
 ---
 
@@ -53,15 +95,18 @@ There is no source code yet. The current phase is documentation and architecture
 
 ## What To Do When Asked To Implement
 
-The project has no code yet. When asked to begin implementation, start from Stage 0 of [documents/STEPS.md](documents/STEPS.md) and build upward. The initialization order is defined in [documents/MODULES.md](documents/MODULES.md) (section: Initialization Order).
+Work continues from **Stage 8** of [documents/STEPS.md](documents/STEPS.md) unless told
+otherwise. Before starting any stage:
 
-Stage 0 requires only:
-- process lifecycle management
-- persistent state storage
-- internal clock
-- defined sandbox boundary
+1. Read that stage's section in STEPS.md and its exit conditions in
+   [documents/STAGE_CRITERIA.md](documents/STAGE_CRITERIA.md).
+2. Check [documents/MODULES.md](documents/MODULES.md) (section: Initialization Order) —
+   `src/main.py` boots modules in that order and annotates each with its slot number.
+3. Add the module to `src/`, wire its `init()` into `main.py` at the correct position,
+   and add tests under `tests/unit/` plus an integration test named for the stage
+   (the existing pattern is `tests/integration/test_stage6_value.py`).
 
-No ML, no sensors, no learning. Stability only.
+Do not skip ahead, and do not begin a stage whose predecessor has not met its criteria.
 
 ---
 
