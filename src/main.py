@@ -80,10 +80,16 @@ async def main() -> None:
     # Persist stage on each boot so we can inspect it externally
     state_store.set("development_stage", stage)
 
-    # Register signal handlers
+    # Register signal handlers. loop.add_signal_handler is POSIX-only; on
+    # Windows fall back to signal.signal, which fires on the main thread and
+    # only wakes the loop on the next scheduled callback — good enough for
+    # shutdown, which is exactly what these handlers do.
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(sig, _handle_signal, sig)
+        try:
+            loop.add_signal_handler(sig, _handle_signal, sig)
+        except NotImplementedError:
+            signal.signal(sig, lambda s, _frame: _handle_signal(signal.Signals(s)))
 
     # Launch long-lived tasks
     bus_task   = asyncio.create_task(bus.run(),   name="bus")

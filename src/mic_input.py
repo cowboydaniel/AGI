@@ -71,6 +71,17 @@ def _probe_best_device() -> tuple[int | None, int]:
             try:
                 frames = sd.rec(int(rate * 0.3), samplerate=rate, channels=1,
                                 dtype="float32", device=i, blocking=True)
+                # Some drivers (e.g. an idle "Stereo Mix" loopback) hand back
+                # uninitialised memory rather than silence: NaNs, denormals and
+                # values far outside the [-1,1] range float32 capture uses.
+                # Treat any such buffer as no signal — accepting it would poison
+                # every downstream feature with inf/NaN.
+                if not np.all(np.isfinite(frames)) or float(np.max(np.abs(frames))) > 1.0:
+                    logger.debug(
+                        "mic_input: device [%d] %r returned non-audio data — skipping",
+                        i, d["name"],
+                    )
+                    continue
                 rms = float(np.sqrt(np.mean(frames ** 2)))
                 if rms > 0.0001:
                     logger.info(
